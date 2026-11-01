@@ -1760,7 +1760,7 @@ async function ciclo(){
 /* ================= INSTAL·LAR COM A APP ================= */
 (function(){
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-  if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}));
   if(standalone) return;
   const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   let prompt=null;
