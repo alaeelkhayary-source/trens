@@ -456,7 +456,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 17</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 18</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -890,23 +890,58 @@ async function cargarLineas(){
       const id=x.route_short_name||x.route_id;
       if(x.route_color && x.route_color!=='000000') COL[id]='#'+x.route_color;
       const g=x.shape?.geometry||x.shape; if(!g||!g.type || AMAGADES.has(id)) return;
-      L.geoJSON(g,{className:'linfons',style:{color:esFosc()?'#0f1114':'#ffffff',weight:7,opacity:.95,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(capaLineas);
+      const fons=L.geoJSON(g,{className:'linfons',style:{color:esFosc()?'#0f1114':'#ffffff',weight:7,opacity:.95,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(capaLineas);
       const lyr=L.geoJSON(g,{className:'linia',style:{color:COL[id]||'#8a96a3',weight:3.5,opacity:.9,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(capaLineas);
+      (S.capesLin[id]||(S.capesLin[id]=[])).push(fons,lyr); (S.geoLin[id]||(S.geoLin[id]=[])).push(g);
       if(ORDEN.includes(id)) bounds.push(lyr.getBounds());
     });
     if(bounds.length){ limites=bounds.reduce((a,b)=>a.extend(b), L.latLngBounds(bounds[0].getSouthWest(),bounds[0].getNorthEast())); }
   }catch(e){ console.warn('Sin trazados', e); }
 }
+/* Vies de cada línia: s'amaguen amb el xip de dalt, igual que els trens */
+S.capesLin={}; S.geoLin={}; S.estLin=null;
+function aplicarVies(){
+  for(const id in S.capesLin){
+    const ama=S.hidden.has(id);
+    S.capesLin[id].forEach(g=>g.eachLayer(l=>l.setStyle({opacity: ama?0:(l.options.className==='linfons'?.95:.9)})));
+  }
+  pintarEstaciones(true);
+}
+// línies que passen per cada estació (segons el traçat: a menys de 200 m)
+function liniesEstacio(code){
+  if(!S.estLin){
+    if(!Object.keys(S.geoLin).length || !S.parents.length) return null;
+    S.estLin={};
+    const segs=[];
+    for(const id in S.geoLin) S.geoLin[id].forEach(g=>{
+      const ls=g.type==='MultiLineString'?g.coordinates:g.type==='LineString'?[g.coordinates]:[];
+      ls.forEach(c=>{ for(let i=1;i<c.length;i++) segs.push([id,c[i-1],c[i]]); });
+    });
+    const kx=Math.cos(41.5*Math.PI/180)*111320, ky=110540;
+    S.parents.forEach(p=>{
+      const s=S.stops[p], set=new Set();
+      segs.forEach(([id,a,b])=>{
+        if(set.has(id)) return;
+        const ax=(a[0]-s.lon)*kx, ay=(a[1]-s.lat)*ky, bx=(b[0]-s.lon)*kx, by=(b[1]-s.lat)*ky;
+        const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy; let t=L2?-(ax*dx+ay*dy)/L2:0; t=Math.max(0,Math.min(1,t));
+        const x=ax+t*dx, y=ay+t*dy; if(x*x+y*y<200*200) set.add(id);
+      });
+      S.estLin[p]=set;
+    });
+  }
+  return S.estLin[code];
+}
+const estAmagada=p=>{ if(!S.hidden.size) return false; const ls=liniesEstacio(p); return !!ls && ls.size>0 && [...ls].every(l=>S.hidden.has(l)); };
 const estMarkers=[];
 map.createPane('estPane').style.zIndex=450;
 const rendEst=L.canvas({padding:.3, pane:'estPane'});
 let nivellEst=null;
 function pintarEstaciones(nomesSiCanvia){
-  const z=map.getZoom(), niv=(z>=13?'a':'b')+(esFosc()?'f':'c')+S.favs.join();
+  const z=map.getZoom(), niv=(z>=13?'a':'b')+(esFosc()?'f':'c')+S.favs.join()+'|'+[...S.hidden].join();
   if(nomesSiCanvia===true && niv===nivellEst) return; nivellEst=niv;
   capaEst.clearLayers();
   S.parents.forEach(p=>{
-    const s=S.stops[p]; if(!isFinite(s.lat)) return;
+    const s=S.stops[p]; if(!isFinite(s.lat) || estAmagada(p)) return;
     const acc=s.wc===1?' ♿':'';
     const fav=esFav(p);
     const m=L.circleMarker([s.lat,s.lon],{renderer:rendEst, radius:z>=13?5.5:4.5,color:fav?'#b37a00':(esFosc()?'#c9d1d9':'#3c4650'),weight:2,fillColor:fav?'#ffc83d':(esFosc()?'#1a1d22':'#ffffff'),fillOpacity:1,bubblingMouseEvents:false});
@@ -1495,7 +1530,7 @@ function pintarTodo(){
 }
 
 /* ================= EVENTOS ================= */
-$('chips').addEventListener('click',e=>{ const b=e.target.closest('button.chip'); if(!b) return; const l=b.dataset.l; S.hidden.has(l)?S.hidden.delete(l):S.hidden.add(l); try{ localStorage.setItem('tev-ocultes', JSON.stringify([...S.hidden])); }catch(e){} pintarTodo(); });
+$('chips').addEventListener('click',e=>{ const b=e.target.closest('button.chip'); if(!b) return; const l=b.dataset.l; S.hidden.has(l)?S.hidden.delete(l):S.hidden.add(l); try{ localStorage.setItem('tev-ocultes', JSON.stringify([...S.hidden])); }catch(e){} pintarTodo(); aplicarVies(); });
 $('netTabs').addEventListener('click',e=>{ const b=e.target.closest('.tab'); if(!b) return; document.querySelectorAll('#netTabs .tab').forEach(x=>x.classList.toggle('on',x===b)); S.net=b.dataset.net; S.showAll=false; pintarTodo(); });
 document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>{
   S.mode=b.dataset.mode; document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on',x===b));
@@ -1805,7 +1840,7 @@ async function ciclo(){
   try{
     await Promise.all([cargarBase(), cargarLineas()]);
     $('loadTxt').textContent='Posició dels trens…';
-    pintarEstaciones(); zoomCls(); encuadrar();
+    aplicarVies(); pintarEstaciones(); zoomCls(); encuadrar();
     await ciclo();
     // Los retrasos exactos aparecen en cuanto llega el horario
     cargarHorarios().then(()=>ciclo()).catch(e=>console.warn('Sin horario', e));
