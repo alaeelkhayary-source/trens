@@ -91,7 +91,9 @@ b,strong{font-weight:600}
 .tpill{position:relative;display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;background:var(--c);border:2.5px solid #fff;color:#fff;font:700 13px var(--sans);letter-spacing:.2px;white-space:nowrap;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.35),0 6px 16px rgba(0,0,0,.18);font-variant-numeric:tabular-nums}
 .tpill .td{background:#fff;color:var(--ok);border-radius:999px;padding:1px 6px;font-size:12px;margin-right:-5px}
 .tpill.w .td{color:var(--warn)} .tpill.b .td{color:#fff;background:var(--bad)}
-.pulse{position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:var(--c);opacity:.35;animation:tpulse 2s ease-out infinite;pointer-events:none}
+.pulse{display:none;position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:var(--c);opacity:.35;animation:tpulse 2s ease-out infinite;pointer-events:none}
+.tw.sel .pulse{display:block}
+.tm{will-change:transform}
 @keyframes tpulse{0%{transform:scale(.6);opacity:.45}100%{transform:scale(2.6);opacity:0}}
 .tw.sel .tpill{transform:scale(1.18);box-shadow:0 0 0 4px rgba(20,23,26,.85),0 6px 16px rgba(0,0,0,.3)}
 #map.lejos .tpill{height:24px;padding:0 8px;font-size:12px}
@@ -329,7 +331,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   /* barra de tasques */
   /* Barra flotant a baix de tot (respecta la zona de l iPhone) */
   :root{--tbh:68px; --tbb:calc(8px + env(safe-area-inset-bottom) * .6)}
-  .tabbar{display:flex;position:fixed;left:10px;right:10px;bottom:var(--tbb);height:var(--tbh);z-index:800;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  .tabbar{display:flex;position:fixed;left:10px;right:10px;bottom:var(--tbb);height:var(--tbh);z-index:800;background:var(--panel);
     border:1px solid var(--line);border-radius:20px;padding:6px 4px;box-shadow:0 6px 24px rgba(16,24,40,.16)}
   .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font:600 12.5px var(--sans);padding:4px 0;cursor:pointer;position:relative}
   .tabbar svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
@@ -454,7 +456,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 16</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 17</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -609,13 +611,13 @@ function parseAlerts(buf){
 /* ================= MAPA ================= */
 const esFosc=()=>document.documentElement.classList.contains('dark');
 const estilMapa=()=>'https://tiles.openfreemap.org/styles/'+(esFosc()?'dark':'liberty');
-const map = L.map('map',{zoomControl:false, attributionControl:false, preferCanvas:false}).setView([41.47,2.03],11);
+const map = L.map('map',{zoomControl:false, attributionControl:false, preferCanvas:false, zoomSnap:.5, wheelPxPerZoomLevel:100, inertiaDeceleration:2500}).setView([41.47,2.03],11);
 L.control.attribution({position:'bottomleft',prefix:false}).addTo(map);
 // Mapa realista (OpenFreeMap, gratis y sin clave). Si no carga, mapa de OpenStreetMap.
 const ATRIB='<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 try{
   if(!L.maplibreGL || !window.maplibregl) throw new Error('sin MapLibre');
-  S.gl=L.maplibreGL({style:estilMapa(), attribution:ATRIB}).addTo(map);
+  S.gl=L.maplibreGL({style:estilMapa(), attribution:ATRIB, fadeDuration:0, antialias:false}).addTo(map);
 }catch(e){
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
 }
@@ -626,7 +628,7 @@ $('zin').onclick=()=>map.zoomIn(); $('zout').onclick=()=>map.zoomOut();
 $('zfit').onclick=()=>encuadrar();
 let limites=null;
 function encuadrar(){ if(limites) map.fitBounds(limites,{paddingTopLeft:[40,150],paddingBottomRight:[40,130]}); }
-function zoomCls(){ const z=map.getZoom(), el=$('map'); el.classList.toggle('lejos', z<12); el.classList.toggle('z11', z<=11); el.classList.toggle('z10', z<=10); el.classList.toggle('z9', z<=9); pintarEstaciones(); }
+function zoomCls(){ const z=map.getZoom(), el=$('map'); el.classList.toggle('lejos', z<12); el.classList.toggle('z11', z<=11); el.classList.toggle('z10', z<=10); el.classList.toggle('z9', z<=9); pintarEstaciones(true); }
 map.on('zoomend', zoomCls);
 
 /* ================= CIUDADES ================= */
@@ -756,16 +758,27 @@ function velocidadMov(id){
   const mo=S.motion[id]; if(!mo) return null; const a=Date.now();
   const v=(sEn(mo,a+5000)-sEn(mo,a))/5*3.6; return v>1?Math.round(v):0;
 }
-function moverTrenes(){
+let mapaMovent=false, ultimMov=0;
+map.on('movestart zoomstart',()=>{ mapaMovent=true; });
+map.on('moveend zoomend',()=>{ mapaMovent=false; moverTrenes(true); });
+function moverTrenes(forcar){
   const ahora=Date.now();
+  const vista=map.getBounds().pad(.25);
   for(const id in S.markers){
     const mo=S.motion[id]; if(!mo) continue;
     const ll=puntoEn(mo.sh, sEn(mo, ahora));
+    const sel=S.sel===id;
+    if(!forcar && !sel && !vista.contains(ll) && !vista.contains(S.markers[id].getLatLng())) continue;
     S.markers[id].setLatLng(ll);
-    if(S.follow && S.sel===id) map.panTo(ll,{animate:false});
+    if(S.follow && sel) map.panTo(ll,{animate:false});
   }
 }
-setInterval(moverTrenes, 250);
+// moviment suau (~30 fps), aturat mentre arrossegues/fas zoom o si la pestanya no es veu
+(function bucle(t){
+  requestAnimationFrame(bucle);
+  if(mapaMovent || document.hidden || t-ultimMov<33) return;
+  ultimMov=t; moverTrenes();
+})(0);
 
 /* ================= REGISTRO DE MOVIMIENTOS ================= */
 function registrar(id, txt, tipo='fgc', t=Date.now()){
@@ -885,14 +898,18 @@ async function cargarLineas(){
   }catch(e){ console.warn('Sin trazados', e); }
 }
 const estMarkers=[];
-function pintarEstaciones(){
+map.createPane('estPane').style.zIndex=450;
+const rendEst=L.canvas({padding:.3, pane:'estPane'});
+let nivellEst=null;
+function pintarEstaciones(nomesSiCanvia){
+  const z=map.getZoom(), niv=(z>=13?'a':'b')+(esFosc()?'f':'c')+S.favs.join();
+  if(nomesSiCanvia===true && niv===nivellEst) return; nivellEst=niv;
   capaEst.clearLayers();
-  const z=map.getZoom();
   S.parents.forEach(p=>{
     const s=S.stops[p]; if(!isFinite(s.lat)) return;
     const acc=s.wc===1?' ♿':'';
     const fav=esFav(p);
-    const m=L.circleMarker([s.lat,s.lon],{radius:z>=13?5.5:4.5,color:fav?'#b37a00':(esFosc()?'#c9d1d9':'#3c4650'),weight:2,fillColor:fav?'#ffc83d':(esFosc()?'#1a1d22':'#ffffff'),fillOpacity:1,bubblingMouseEvents:false});
+    const m=L.circleMarker([s.lat,s.lon],{renderer:rendEst, radius:z>=13?5.5:4.5,color:fav?'#b37a00':(esFosc()?'#c9d1d9':'#3c4650'),weight:2,fillColor:fav?'#ffc83d':(esFosc()?'#1a1d22':'#ffffff'),fillOpacity:1,bubblingMouseEvents:false});
     if(z>=13 || fav) m.bindTooltip((fav?'★ ':'')+s.name+acc,{permanent:true,direction:'right',offset:[8,0],className:'stl'});
     if(HOVER){
       m.on('mouseover',()=>{ m.setStyle({radius:8,weight:3,color:'#14171a'}); mostrarPopupEst(p); });
