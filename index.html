@@ -325,7 +325,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
     <div class="list" id="list"></div>
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
-      <div class="creator">Creador: <b>Alae</b></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 3</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -540,6 +540,29 @@ function sEn(mo, t){
   for(let i=1;i<k.length;i++){ if(t<=k[i].t){ const a=k[i-1], b=k[i]; return a.s+(b.s-a.s)*((t-a.t)/(b.t-a.t||1)); } }
   return k[k.length-1].s;
 }
+// Posició (metres sobre el traçat) on hauria de ser el tren ara segons les hores previstes en temps real
+const cacheParS=new Map();
+function sSegonsHorari(t, sh, ahora){
+  const par=t.par; if(!par||par.length<2) return null;
+  let ss=cacheParS.get(t.id);
+  if(!ss||ss.length!==par.length){
+    ss=[]; let idx=0, ant=0;
+    par.forEach(p=>{ const e=S.stops[parentOf(p.stop)]||S.stops[p.stop];
+      if(!e||!isFinite(e.lat)){ ss.push(null); return; }
+      const pr=proyectar(sh,e.lat,e.lon,idx); if(pr.d>500){ ss.push(null); return; }
+      idx=Math.max(idx,pr.i); ant=Math.max(ant,pr.s); ss.push(ant); });
+    cacheParS.set(t.id,ss);
+  }
+  let a=null;
+  for(let i=0;i<par.length;i++){
+    if(ss[i]==null) continue;
+    const arr=par[i].est??par[i].prog, dep=par[i].estD??par[i].progD??arr;
+    if(ahora<arr){ if(!a) return ss[i]; const k=(ahora-a.dep)/((arr-a.dep)||1); return a.s+(ss[i]-a.s)*Math.max(0,Math.min(1,k)); }
+    if(ahora<=dep) return ss[i];
+    a={s:ss[i],dep};
+  }
+  return a?a.s:null;
+}
 function prepararMovimiento(t){
   const info=S.trips.get(t.id); const sh=info?.shape!=null ? S.shapes.get(String(info.shape)) : null;
   if(!sh || !t.par || t.sigIdx<0){ delete S.motion[t.id]; return; }
@@ -547,26 +570,31 @@ function prepararMovimiento(t){
   const real=proyectar(sh, t.pos[0], t.pos[1]);
   if(real.d>400){ delete S.motion[t.id]; return; }       // el tren no está sobre este trazado
   const prev=S.motion[t.id];
-  let s0=real.s;
-  // Si FGC no ha canviat la posició (dada encallada), es manté la posició estimada i no es fa tornar el tren enrere.
+  // La posició d'FGC pot arribar amb minuts de retard: si l'horari en temps real diu que el tren
+  // ja ha d'anar més endavant (fins a 4 km), es fa servir aquesta.
+  const sh_ = sSegonsHorari(t, sh, ahora);
+  const base = (sh_!=null && sh_>real.s && sh_-real.s<4000) ? sh_ : real.s;
+  let s0=base;
   const realNova = !prev || prev.realS==null || Math.abs(prev.realS-real.s)>5;
   if(prev){ const disp=sEn(prev, ahora);
-    if(!realNova){ if(disp>=real.s-50) s0=disp; }
-    else if(Math.abs(disp-real.s)<1200) s0=disp; }
+    if(!realNova){ if(disp>=real.s-50) s0=Math.max(disp, base>disp+1200?base:disp); }
+    else if(Math.abs(disp-base)<1200) s0=disp; }
   const keys=[{t:ahora, s:s0}]; let idx=Math.max(0, real.i-2), sAnt=s0;
   const paradas=t.par.slice(t.sigIdx, t.sigIdx+8);
   paradas.forEach((p,j)=>{
     const e=S.stops[parentOf(p.stop)]||S.stops[p.stop]; if(!e||!isFinite(e.lat)) return;
     const pr=proyectar(sh, e.lat, e.lon, idx); if(pr.d>500) return;
     idx=Math.max(idx, pr.i);
+    const aturatAqui = j===0 && t.parado && s0 <= pr.s+30;
+    if(!aturatAqui && pr.s < s0-30) return;   // parada que (segons l'estimació) ja ha passat
     const s=Math.max(sAnt, pr.s);
     let llega=p.est??p.prog, sale=p.estD??p.progD??llega;
     const ultimo=keys[keys.length-1];
     const nomE=nom(p.stop);
-    if(j===0 && t.parado){
+    if(aturatAqui){
       // Aturat: espera fins a l'hora de sortida. Si ja fa més d'1 min que havia de sortir, la dada d'FGC
       // probablement va endarrerida, així que el tren surt (no es queda clavat a l'estació).
-      const marge = 60000;
+      const marge = 30000;
       const surt = sale > ahora ? sale : (ahora - sale < marge ? sale + marge : ahora);
       keys.push({t:Math.max(ahora+1, surt), s:s0, nom:nomE, tipo:"sale"}); sAnt=s0; return; }
     // si la hora estimada ya ha pasado, se le da el tiempo justo para llegar (≈ 45 km/h)
@@ -820,6 +848,7 @@ function construirTrenes(geo){
   S.trains.forEach(prepararMovimiento);
   S.trains.forEach(compararEstado);
   Object.keys(S.prevState).forEach(id=>{ if(!vivos.has(id)){ delete S.prevState[id]; delete S.track[id]; } });
+  [...cacheParS.keys()].forEach(id=>{ if(!vivos.has(id)) cacheParS.delete(id); });
 }
 
 /* ================= PINTAR ================= */
