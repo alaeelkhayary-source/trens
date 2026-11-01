@@ -456,7 +456,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 22</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 21</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -901,15 +901,16 @@ async function cargarLineas(){
 }
 /* Vies de cada línia: s'amaguen amb el xip de dalt, igual que els trens */
 S.capesLin={}; S.geoLin={}; S.estLin=null;
-// Si has amagat alguna línia, al mapa només hi queda el que tens activat a la barra de dalt.
-// Les variants sense botó propi (R50, R60…) segueixen la seva línia base (R5, R6…).
-const baseLin = id => { const m=String(id).match(/^([A-Z]+\d)\d+$/); return m?m[1]:id; };
-const teTrens = id => S.trains.some(t=>t.lin===id);
-function liniaActiva(id){ return [id, baseLin(id)].some(x=>teTrens(x) && !S.hidden.has(x)); }
-function viaAmagada(id){ return S.hidden.size>0 && !liniaActiva(id); }
+// una via està amagada si la seva línia ho està; les variants sense botó propi (R50, R60…) segueixen la línia base (R5, R6…)
+function viaAmagada(id){
+  if(S.hidden.has(id)) return true;
+  if(S.trains.some(t=>t.lin===id)) return false;          // té botó propi i no està amagada
+  const m=String(id).match(/^([A-Z]+\d)\d+$/);             // R50 → R5, S50 → S5
+  return !!(m && S.hidden.has(m[1]));
+}
 function aplicarVies(){
   for(const id in S.capesLin){
-    const ama=S.trains.length ? viaAmagada(id) : S.hidden.has(id);
+    const ama=viaAmagada(id);
     S.capesLin[id].forEach(g=>g.eachLayer(l=>l.setStyle({opacity: ama?0:(l.options.className==='linfons'?.95:.9)})));
   }
   if(S.parents.length) pintarEstaciones();
@@ -938,7 +939,7 @@ function liniesEstacio(code){
   }
   return S.estLin[code];
 }
-const estAmagada=p=>{ if(!S.hidden.size || esFav(p) || !S.trains.length) return false; const ls=liniesEstacio(p); if(!ls) return false; return ![...ls].some(liniaActiva); };
+const estAmagada=p=>{ if(!S.hidden.size) return false; const ls=liniesEstacio(p); return !!ls && ls.size>0 && [...ls].every(viaAmagada); };
 const estMarkers=[];
 map.createPane('estPane').style.zIndex=450;
 const rendEst=L.canvas({padding:.3, pane:'estPane'});
