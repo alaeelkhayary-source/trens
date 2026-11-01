@@ -241,10 +241,10 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   .chips::-webkit-scrollbar{display:none}
   .chip{flex:none;padding:5px 10px;font-size:12px}
   .zoom{display:none}
-  .leaflet-bottom{bottom:calc(64px + env(safe-area-inset-bottom))}
+  .leaflet-bottom{bottom:calc(var(--tbh) + var(--tbb) + 6px)}
   /* panell com a full que puja des de baix */
   aside{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;height:78vh;height:78dvh;border-radius:20px 20px 0 0;z-index:700;
-    transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding-bottom:calc(64px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(16,24,40,.18)}
+    transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding-bottom:calc(var(--tbh) + var(--tbb) + 8px);box-shadow:0 -8px 30px rgba(16,24,40,.18)}
   body.sheet aside{transform:translateY(0)}
   aside header{padding:10px 16px 6px;position:relative}
   aside header::before{content:'';display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
@@ -253,7 +253,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   .sheettitle{font-size:18px;font-weight:600;margin:0 0 4px}
   .foot{padding:10px 16px}
   /* fitxa del tren a sobre de la barra */
-  .card{left:8px;right:8px;width:auto;bottom:calc(72px + env(safe-area-inset-bottom));max-height:42vh;max-height:42dvh;border-radius:18px;padding:8px 14px 12px;z-index:650;box-shadow:0 -4px 24px rgba(16,24,40,.16);overscroll-behavior:contain}
+  .card{left:8px;right:8px;width:auto;bottom:calc(var(--tbh) + var(--tbb) + 10px);max-height:42vh;max-height:42dvh;border-radius:18px;padding:8px 14px 12px;z-index:650;box-shadow:0 -4px 24px rgba(16,24,40,.16);overscroll-behavior:contain}
   .card.exp{max-height:68vh;max-height:68dvh}
   .card .grab{display:block;padding:4px 0 8px;margin:0 40px;touch-action:none;cursor:grab}
   .card .grab::before{content:'';display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
@@ -267,8 +267,10 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   .instbtn span{display:none}
   body.sheet .card{display:none}
   /* barra de tasques */
-  .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:800;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-    border-top:1px solid var(--line);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  /* La barra flota per sobre de l'etiqueta "Powered by Netlify" (pla gratuït), que queda a sota */
+  :root{--tbh:60px; --tbb:calc(58px + env(safe-area-inset-bottom) * .5)}
+  .tabbar{display:flex;position:fixed;left:10px;right:10px;bottom:var(--tbb);height:var(--tbh);z-index:800;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid var(--line);border-radius:20px;padding:6px 4px;box-shadow:0 6px 24px rgba(16,24,40,.16)}
   .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font:500 10.5px var(--sans);padding:4px 0;cursor:pointer;position:relative}
   .tabbar svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
   .tabbar button.on{color:var(--text)}
