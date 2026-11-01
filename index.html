@@ -1400,7 +1400,7 @@ function actualitzarBadge(){
 
 /* ===== Donacions ===== */
 // Enllaç de donacions (Ko-fi, PayPal.me…). Si està buit, no es mostra res.
-const DONACIONS_URL = '';
+const DONACIONS_URL = 'https://ko-fi.com/alaeelkhayary';
 function iniciarDonacions(){
   if(!DONACIONS_URL) return;
   ['donHead','donFoot','donGo'].forEach(id=>{ const a=$(id); if(a){ a.href=DONACIONS_URL; a.style.display=''; } });
