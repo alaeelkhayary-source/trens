@@ -128,6 +128,7 @@ b,strong{font-weight:600}
 .estpop .leaflet-popup-tip{box-shadow:none}
 .ep .ept{font-size:16px;font-weight:600;margin-bottom:6px}
 .ep .slines{margin:0 0 10px}
+.ep .epd{display:block;font:400 12px var(--sans);color:var(--muted);margin-top:2px}
 .epa{font-size:13px;font-weight:600;padding:7px 10px;border-radius:10px;background:var(--card);color:var(--muted)}
 .epa.ok{background:#e8f6ee;color:#0f7a43}.epa.part{background:#fff4e0;color:#9a5b00}.epa.no{background:#fdecec;color:#b3261e}
 .ep .andanes span{background:var(--card)}
@@ -201,6 +202,13 @@ body.can-install .instbtn{display:flex}
 .zoom{position:absolute;z-index:500;right:440px;bottom:20px;display:flex;flex-direction:column;background:var(--panel);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
 .zoom button{width:40px;height:40px;background:none;border:none;color:var(--text);font-size:18px;cursor:pointer}
 .zoom button+button{border-top:1px solid var(--line)}
+.locbtn{position:absolute;z-index:500;right:440px;bottom:156px;width:40px;height:40px;border-radius:12px;border:none;background:var(--panel);color:var(--text);box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.locbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.locbtn svg .f{fill:currentColor;stroke:none}
+.locbtn.on{color:#1a73e8}
+.locbtn.busy svg{animation:locp 1s ease-in-out infinite}
+@keyframes locp{50%{opacity:.35}}
+.medot{width:18px;height:18px;border-radius:50%;background:#1a73e8;border:3px solid #fff;box-shadow:0 0 0 6px rgba(26,115,232,.22),0 2px 6px rgba(0,0,0,.3)}
 
 /* Panel derecho flotante */
 aside{position:absolute;z-index:550;top:20px;right:20px;bottom:20px;width:400px;background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0;overflow:hidden}
@@ -287,6 +295,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   .top .chips.fi{-webkit-mask-image:none;mask-image:none}
   .chip{flex:none;padding:5px 10px;font-size:12px}
   .zoom{display:none}
+  .locbtn{right:12px;bottom:calc(var(--tbh) + var(--tbb) + 34px);width:46px;height:46px;border-radius:50%}
   .leaflet-bottom{bottom:calc(var(--tbh) + var(--tbb) + 6px)}
   /* panell com a full que puja des de baix */
   aside{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;height:78vh;height:78dvh;border-radius:20px 20px 0 0;z-index:700;
@@ -374,6 +383,7 @@ html.dark .leaflet-popup-close-button{color:var(--muted)!important}
 html.dark .leaflet-tooltip{background:var(--panel);color:var(--text);border-color:var(--line)}
 html.dark .leaflet-tooltip-top:before{border-top-color:var(--panel)}
 html.dark .leaflet-tooltip-bottom:before{border-bottom-color:var(--panel)}
+html.dark .locbtn{background:var(--panel)}
 html.dark .tabbar{background:rgba(26,29,34,.96)}
 html.dark .stl{color:#d5dbe1;text-shadow:0 0 2px #000,0 0 4px #000,0 0 6px #000}
 
@@ -404,6 +414,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
       </div>
       <div class="chips" id="chips"></div>
     </div>
+    <button class="locbtn" id="locBtn" aria-label="Estació més propera" title="Estació més propera"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" class="f"/></svg></button>
     <div class="zoom"><button id="zin" aria-label="Apropar">+</button><button id="zout" aria-label="Allunyar">−</button><button id="zfit" aria-label="Veure tota la xarxa" style="font-size:14px">⤢</button></div>
     <div class="card" id="card"></div>
   </div>
@@ -440,7 +451,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 14</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 15</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1171,7 +1182,7 @@ function htmlPopupEst(code, salidas){
         return `<div class="pr ${s.tripId?'clic':''}" ${s.tripId?`data-id="${esc(s.tripId)}"`:''}><span class="lin" style="background:${colorOf(s.lin)}">${esc(s.lin)}</span><span class="pd">${esc(s.dest||'')}</span>${s.real&&d>=1?`<span class="pdl ${cls(d)}">+${d}</span>`:''}<span class="pm ${s.real?'':'sch'}">${min<1?'ara':min+' min'}</span></div>`;
       }).join('') || '<div class="pv">Avui ja no queden més trens.</div>');
   return `<div class="ep">
-    <div class="ept">${esc(nom(code))}</div>
+    <div class="ept">${esc(nom(code))}${S.jo?`<span class="epd">${(()=>{const d=distM(S.jo[0],S.jo[1],S.stops[code].lat,S.stops[code].lon);return fmtDist(d)+(d<5000?` · ${Math.max(1,Math.round(d/80))} min a peu`:''); })()}</span>`:''}</div>
     ${botoFav(code)}
     ${lin.length?`<div class="slines">${lin.map(l=>`<span class="lin" style="background:${colorOf(l)}">${esc(l)}</span>`).join('')}</div>`:''}
     <div class="epa ${acc.cls}">${acc.icon} ${esc(acc.txt)}</div>
@@ -1722,6 +1733,35 @@ $('temaBtn').onclick=()=>{
 aplicarTema(temaVol());
 setInterval(()=>aplicarTema(temaVol()), 60000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) aplicarTema(temaVol()); });
+
+/* ===== 📍 Estació més propera ===== */
+let capaJo=null;
+function distM(a,b,c,d){ const r=Math.PI/180, x=(d-b)*r*Math.cos((a+c)/2*r), y=(c-a)*r; return Math.sqrt(x*x+y*y)*6371000; }
+function fmtDist(m){ return m<1000 ? `${Math.round(m/10)*10} m` : `${(m/1000).toFixed(m<10000?1:0).replace('.',',')} km`; }
+$('locBtn').onclick=()=>{
+  const b=$('locBtn');
+  if(!('geolocation' in navigator)){ avMsg('Aquest navegador no pot saber on ets'); return; }
+  if(!window.isSecureContext){ avMsg("Per saber on ets cal la connexió segura (https)"); return; }
+  b.classList.add('busy');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    b.classList.remove('busy'); b.classList.add('on');
+    const {latitude:la, longitude:lo, accuracy}=pos.coords; S.jo=[la,lo];
+    const llista=S.parents.map(c=>({c, d:distM(la,lo,S.stops[c].lat,S.stops[c].lon)})).sort((x,y)=>x.d-y.d);
+    const top=llista[0]; if(!top) return;
+    if(capaJo) map.removeLayer(capaJo);
+    capaJo=L.layerGroup([
+      L.circle([la,lo],{radius:Math.min(accuracy,300),color:'#1a73e8',weight:1,opacity:.4,fillOpacity:.08,interactive:false}),
+      L.marker([la,lo],{icon:L.divIcon({className:'',html:'<div class="medot"></div>',iconSize:[18,18],iconAnchor:[9,9]}),interactive:false,zIndexOffset:-100})
+    ]).addTo(map);
+    const s=S.stops[top.c];
+    if(top.d>30000){ map.setView([la,lo],12); avMsg(`📍 L'estació d'FGC més propera és ${nom(top.c)}, a ${fmtDist(top.d)}`); return; }
+    map.fitBounds(L.latLngBounds([[la,lo],[s.lat,s.lon]]).pad(.6),{maxZoom:16, paddingTopLeft:[20,150], paddingBottomRight:[window.innerWidth>900?440:20, window.innerWidth>900?40:160]});
+    setTimeout(()=>mostrarPopupEst(top.c,true), 450);
+  }, err=>{
+    b.classList.remove('busy');
+    avMsg(err.code===1 ? "Has de donar permís d'ubicació al navegador per trobar la teva estació" : "No s'ha pogut saber on ets. Torna-ho a provar");
+  }, {enableHighAccuracy:true, timeout:12000, maximumAge:60000});
+};
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(){
