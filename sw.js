@@ -10,3 +10,10 @@ self.addEventListener('fetch', e => {
   e.respondWith(fetch(req).then(r => { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); return r; })
     .catch(() => caches.match(req).then(r => r || caches.match('./'))));
 });
+// En tocar una notificació d'avís, obre (o porta al davant) la web.
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    const c = cs.find(x => 'focus' in x); return c ? c.focus() : self.clients.openWindow('./');
+  }));
+});

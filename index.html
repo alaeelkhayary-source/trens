@@ -213,6 +213,26 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .list{overflow:auto;flex:1;padding:4px 12px 12px}
 .item{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;padding:12px 10px;cursor:pointer;border-radius:12px}
 .item+.item{border-top:1px solid var(--line)}
+.times{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.bell{margin-top:2px;width:30px;height:26px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:13px;line-height:1;cursor:pointer;filter:grayscale(1);opacity:.75;padding:0}
+.bell:hover{opacity:1}
+.bell.on{filter:none;opacity:1;background:#fff7e0;border-color:#f0c24b}
+.avsheet{position:fixed;inset:0;z-index:1000;display:none;align-items:flex-end;justify-content:center;background:rgba(20,20,20,.25)}
+.avsheet.show{display:flex}
+.avbox{width:min(420px,100%);background:#fff;border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.15);font-family:var(--sans)}
+@media(min-width:901px){.avsheet{align-items:center}.avbox{border-radius:20px}}
+.avbox h3{margin:0 0 4px;font-size:17px}
+.avbox .avtr{color:var(--muted);font-size:13px;margin-bottom:14px}
+.avbox .avopts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.avbox .avopts button{padding:12px 6px;border-radius:12px;border:1px solid var(--line);background:#fff;font:600 14px var(--sans);cursor:pointer}
+.avbox .avopts button.on{background:var(--text);color:#fff;border-color:var(--text)}
+.avbox label{display:flex;gap:10px;align-items:center;font-size:14px;margin:4px 0 14px}
+.avbox .avact{display:flex;gap:8px}
+.avbox .avact button{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:#fff;font:600 14px var(--sans);cursor:pointer}
+.avbox .avact .ok{background:var(--text);color:#fff;border-color:var(--text)}
+.avbox .avact .del{color:var(--bad)}
+.avbox .avnote{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.4}
+.avmsg{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:1100;background:var(--text);color:#fff;padding:10px 16px;border-radius:999px;font:500 13px var(--sans);box-shadow:0 6px 20px rgba(0,0,0,.2);display:none;max-width:90vw;text-align:center}
 .item:hover{background:var(--card)}
 .big{font:600 18px var(--sans);text-align:center;font-variant-numeric:tabular-nums;color:var(--warn)}
 .big.b{color:var(--bad)} .big.w{color:var(--warn)} .big.ok{color:var(--ok);font-size:13px;font-weight:500}
@@ -352,7 +372,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
       <div class="modes">
         <button class="mode" data-mode="favs">★ Preferides</button>
         <button class="mode on" data-mode="late">Retards</button>
-        <button class="mode" data-mode="station">Estació</button>
+        <button class="mode" data-mode="station">Trens</button>
         <button class="mode" data-mode="avisos">Avisos</button>
       </div>
       <div id="hdrLate">
@@ -378,7 +398,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 8</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 9</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -388,7 +408,14 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   <ol id="instSteps"></ol>
   <button id="instOk">Entesos</button>
 </div></div>
-<nav class="tabbar" id="tabbar"><button data-tab="mapa" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Mapa</span></button><button data-tab="favs"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Preferides</span></button><button data-tab="late"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span>Retards</span><i class="badge" id="badgeLate" style="display:none"></i></button><button data-tab="station"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-3M15 21l2-3"/></svg><span>Estació</span></button><button data-tab="avisos"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg><span>Avisos</span></button></nav>
+<div class="avsheet" id="avSheet"><div class="avbox" role="dialog" aria-label="Avís del tren">
+  <h3>🔔 Avisa'm d'aquest tren</h3><div class="avtr" id="avTr"></div>
+  <div class="avopts" id="avOpts"><button data-m="5">5 min abans</button><button data-m="10" class="on">10 min abans</button><button data-m="15">15 min abans</button></div>
+  <label><input type="checkbox" id="avRet" checked> També si porta retard (3 min o més)</label>
+  <div class="avact"><button id="avDel" class="del" style="display:none">Treure avís</button><button id="avNo">Cancel·lar</button><button id="avOk" class="ok">Activar avís</button></div>
+  <div class="avnote" id="avNote">Rebràs l'avís mentre tinguis la web oberta (també en segon pla). A l'iPhone, cal tenir-la instal·lada a la pantalla d'inici.</div>
+</div></div><div class="avmsg" id="avMsg"></div>
+<nav class="tabbar" id="tabbar"><button data-tab="mapa" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Mapa</span></button><button data-tab="favs"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Preferides</span></button><button data-tab="late"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span>Retards</span><i class="badge" id="badgeLate" style="display:none"></i></button><button data-tab="station"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-3M15 21l2-3"/></svg><span>Trens</span></button><button data-tab="avisos"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg><span>Avisos</span></button></nav>
 <script>
 /* ================= CONFIG ================= */
 const BASE = 'https://dadesobertes.fgc.cat/api/explore/v2.1/catalog/datasets';
@@ -1036,6 +1063,7 @@ async function salidasEstacion(code){
     });
   }catch(e){ console.warn('viajes-de-hoy', e); }
   salidas.sort((a,b)=>(a.est??a.prog)-(b.est??b.prog));
+  salidas.forEach(s=>s.code=code);
   return salidas;
 }
 // troba el trip_id d'una sortida programada (mateixa estació, hora i destinació)
@@ -1051,7 +1079,7 @@ function htmlSalida(s, ahora){
       <div class="big ${s.real?cls(d):'ok'}" style="${s.real?'':'color:var(--dim)'}">${min<1?'ara':min+'′'}</div>
       <div><div class="t"><span class="lin" style="background:${colorOf(s.lin)}">${esc(s.lin)}</span> ${esc(s.dest)}</div>
       <div class="m">${s.real ? (d>=1?`<span style="color:var(--${cls(d)==='b'?'bad':cls(d)==='w'?'warn':'ok'})">${fmtD(d)} min de retard</span>`:'<span style="color:var(--ok)">A l\'hora · temps real</span>') : 'Segons horari'}</div></div>
-      <div class="times">${s.real&&d?`<s>${hm(s.prog)}</s>`:''}<b>${hm(t)}</b></div></div>`;
+      <div class="times">${s.real&&d?`<s>${hm(s.prog)}</s>`:''}<b>${hm(t)}</b>${botoAvis(s.tripId, s.code, null)}</div></div>`;
 }
 async function pintarEstacion(){
   const L_=$('list');
@@ -1415,7 +1443,7 @@ map.on('dragstart',()=>{ S.follow=false; });
 /* ================= ARRANQUE ================= */
 
 /* ===== Mòbil: barra de tasques i full inferior ===== */
-const TITOLS={favs:'★ Preferides', late:'Retards', station:'Estació', avisos:'Avisos'};
+const TITOLS={favs:'★ Preferides', late:'Retards', station:'Trens', avisos:'Avisos'};
 const esMobil=()=>window.innerWidth<=900;
 function obrirFull(mode){
   S.mode=mode; mostrarPestanya();
@@ -1491,7 +1519,7 @@ function sortidesProgramades(code, data, secDes, n){
     if(avui?.has(svc) && x.dep>=secDes && x.dep<86400+secDes) out.push({tid:x.tid, data, dep:x.dep});
     else if(ahir?.has(svc) && x.dep>=86400+secDes) out.push({tid:x.tid, data:ahirD, dep:x.dep});
   });
-  out.forEach(o=>o.prog=gtfsMidnight(o.data)+o.dep*1000);
+  out.forEach(o=>{o.prog=gtfsMidnight(o.data)+o.dep*1000; o.code=code;});
   out.sort((a,b)=>a.prog-b.prog);
   return out.slice(0,n);
 }
@@ -1501,7 +1529,7 @@ function htmlFutur(s){
   return `<div class="item" data-id="${esc(s.tid)}" data-date="${s.data}">
       <div class="big hora">${hm(s.prog)}</div>
       <div><div class="t"><span class="lin" style="background:${colorOf(lin)}">${esc(lin)}</span> ${esc(dest)}</div>
-      <div class="m">${esc(nomDia(s.data))} · segons horari</div></div><div></div></div>`;
+      <div class="m">${esc(nomDia(s.data))} · segons horari</div></div><div class="times">${botoAvis(s.tid, s.code, s.data)}</div></div>`;
 }
 async function pintarFutur(code, acc){
   const L_=$('list'), q=S.quan, data=dataDia(q.dia);
@@ -1533,6 +1561,92 @@ $('quanDT').addEventListener('change',()=>{
 $('qsel').addEventListener('click',()=>{ const i=$('quanDT'); try{ i.showPicker&&i.showPicker(); }catch(e){} });
 marcarQuan();
 (()=>{const c=$('chips');const f=()=>c.classList.toggle('fi',c.scrollLeft+c.clientWidth>=c.scrollWidth-4);c.addEventListener('scroll',f,{passive:true});['touchstart','touchmove','pointerdown','pointermove','mousedown','wheel'].forEach(t=>c.addEventListener(t,e=>e.stopPropagation(),{passive:true}));new ResizeObserver(f).observe(c);new MutationObserver(f).observe(c,{childList:true});})();
+
+/* ===== Avisa'm del meu tren (notificacions amb la web oberta) ===== */
+S.avisos=(()=>{ try{ return JSON.parse(localStorage.getItem('tev-avisos'))||[]; }catch(e){ return []; } })();
+const desaAvisos=()=>{ try{ localStorage.setItem('tev-avisos', JSON.stringify(S.avisos)); }catch(e){} };
+const avisDe=(tid,code)=>S.avisos.find(a=>a.tid===tid && a.code===code);
+function botoAvis(tid, code, data){
+  if(!tid || !code) return '';
+  const on=!!avisDe(tid,code);
+  return `<button class="bell ${on?'on':''}" data-avis="${esc(tid)}" data-acode="${esc(code)}" ${data?`data-adata="${data}"`:''} aria-label="${on?'Avís activat':'Avisa\'m d\'aquest tren'}" title="${on?'Avís activat':'Avisa\'m d\'aquest tren'}">🔔</button>`;
+}
+function avMsg(t){ const m=$('avMsg'); m.textContent=t; m.style.display='block'; clearTimeout(avMsg.t); avMsg.t=setTimeout(()=>m.style.display='none',3500); }
+let avSel=null;
+function obrirAvis(tid, code, data){
+  const info=S.trips.get(tid)||{}; const a=S.sched.get(tid);
+  const dest=info.headsign||(a?nom(a[a.length-1].stop):''); const lin=info.route||S.trains.find(t=>t.id===tid)?.lin||'';
+  const dia=data||dataDia(0);
+  const st=a?.find(x=>parentOf(x.stop)===code); const prog=st?gtfsMidnight(dia)+st.dep*1000:null;
+  avSel={tid, code, data:dia, lin, dest, prog};
+  const ex=avisDe(tid,code);
+  $('avTr').innerHTML=`<span class="lin" style="background:${colorOf(lin)}">${esc(lin)}</span> cap a ${esc(dest)} · des de <b>${esc(nom(code))}</b>${prog?` a les <b>${hm(prog)}</b>`:''}${dia!==dataDia(0)?` · ${esc(nomDia(dia))}`:''}`;
+  const m=ex?ex.min:10;
+  $('avOpts').querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.m===m));
+  $('avRet').checked=ex?ex.ret:true;
+  $('avDel').style.display=ex?'':'none'; $('avOk').textContent=ex?'Desar':'Activar avís';
+  const ios=/iPhone|iPad/.test(navigator.userAgent), inst=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  $('avNote').textContent = !('Notification' in window) ? (ios&&!inst ? "A l'iPhone, per rebre avisos has d'instal·lar la web: botó Compartir → «Afegir a la pantalla d'inici», i obrir-la des d'allà." : "Aquest navegador no permet notificacions. T'avisarem amb un missatge dins la web.")
+    : "Rebràs l'avís mentre tinguis la web oberta (també en segon pla).";
+  $('avSheet').classList.add('show');
+}
+const tancarAvis=()=>{ $('avSheet').classList.remove('show'); avSel=null; };
+$('avOpts').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; $('avOpts').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); });
+$('avNo').onclick=tancarAvis;
+$('avSheet').addEventListener('click',e=>{ if(e.target.id==='avSheet') tancarAvis(); });
+$('avDel').onclick=()=>{ if(!avSel) return; S.avisos=S.avisos.filter(a=>!(a.tid===avSel.tid&&a.code===avSel.code)); desaAvisos(); tancarAvis(); refrescarVistesAvis(); avMsg('Avís tret'); };
+$('avOk').onclick=async()=>{
+  if(!avSel) return;
+  const min=+($('avOpts').querySelector('.on')?.dataset.m||10), ret=$('avRet').checked;
+  if('Notification' in window && Notification.permission==='default'){ try{ await Notification.requestPermission(); }catch(e){} }
+  S.avisos=S.avisos.filter(a=>!(a.tid===avSel.tid&&a.code===avSel.code));
+  S.avisos.push({...avSel, min, ret, fetAbans:false, retAvisat:0});
+  desaAvisos(); tancarAvis(); refrescarVistesAvis();
+  avMsg(('Notification' in window && Notification.permission==='denied') ? "Avís desat, però les notificacions estan bloquejades: t'avisarem dins la web" : `🔔 T'avisarem ${min} min abans`);
+  comprovarAvisos();
+};
+function refrescarVistesAvis(){
+  document.querySelectorAll('.bell[data-avis]').forEach(b=>b.classList.toggle('on', !!avisDe(b.dataset.avis,b.dataset.acode)));
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.bell[data-avis]'); if(!b) return;
+  e.preventDefault(); e.stopPropagation();
+  obrirAvis(b.dataset.avis, b.dataset.acode, b.dataset.adata||null);
+},true);
+async function notificar(titol, cos, tag){
+  avMsg(titol+' · '+cos);
+  if(!('Notification' in window) || Notification.permission!=='granted') return;
+  const opt={body:cos, tag, icon:'icons/icon-192.png', badge:'icons/icon-192.png', renotify:true};
+  try{ const r=await navigator.serviceWorker?.getRegistration(); if(r){ await r.showNotification(titol,opt); return; } }catch(e){}
+  try{ new Notification(titol,opt); }catch(e){}
+}
+async function comprovarAvisos(){
+  if(!S.avisos.length) return;
+  const ara=Date.now(), avui=dataDia(0); let canvi=false;
+  for(const a of S.avisos){
+    if(a.data!==avui) continue;
+    let prog=a.prog, est=null;
+    const rt=S.rt.get(a.tid);
+    if(rt){ const par=paradasViaje(a.tid); const p=par?.find(x=>parentOf(x.stop)===a.code); if(p){ prog=p.progD??prog; est=p.estD??null; } }
+    const t=est??prog; if(!t) continue;
+    const ret=est!=null?Math.round((est-prog)/60000):0;
+    const nomE=nom(a.code), ttl=`🚆 ${a.lin} cap a ${a.dest}`;
+    if(a.ret && ret>=3 && ret>=a.retAvisat+2 && t>ara){
+      a.retAvisat=ret; canvi=true;
+      notificar(`⚠️ ${a.lin} porta +${ret} min de retard`, `Cap a ${a.dest}. Nova hora a ${nomE}: ${hm(t)}`, 'ret-'+a.tid);
+    }
+    const falta=(t-ara)/60000;
+    if(!a.fetAbans && falta<=a.min && falta>-1){
+      a.fetAbans=true; canvi=true;
+      notificar(ttl, `Passa per ${nomE} ${falta<1?'ara':`d'aquí a ${Math.round(falta)} min`} (${hm(t)}${ret>=1?`, +${ret}′ de retard`:''})`, 'abans-'+a.tid);
+    }
+    if(t<ara-10*60000){ a.fi=true; canvi=true; }
+  }
+  const n=S.avisos.length; S.avisos=S.avisos.filter(a=>!a.fi && a.data>=avui);
+  if(canvi||n!==S.avisos.length){ desaAvisos(); refrescarVistesAvis(); }
+}
+setInterval(comprovarAvisos, 15000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) comprovarAvisos(); });
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(){
