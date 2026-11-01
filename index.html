@@ -456,7 +456,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 22</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 23</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -479,7 +479,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
 <script>
 /* ================= CONFIG ================= */
 const BASE = 'https://dadesobertes.fgc.cat/api/explore/v2.1/catalog/datasets';
-const REFRESH = 5000;   // se pregunta a FGC cada 5 s; el mapa se mueve cada segundo
+const REFRESH = 20000;  // es pregunta a FGC cada 20 s (FGC actualitza les posicions ~1 cop per minut); els trens es mouen sols entre consultes
 const XARXA = {
   BV:['L6','L7','L12','S1','S2','S5','S6','S7'],
   LA:['L8','S3','S4','S8','S9','R5','R50','R53','R6','R60','R63'],
@@ -523,6 +523,18 @@ const cls = d => d==null ? 'ok' : d>=10 ? 'b' : d>=3 ? 'w' : 'ok';
 const fmtD = d => d==null ? '' : d>0 ? '+'+d : d<0 ? String(d) : '';
 async function J(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status+' '+url); return r.json(); }
 async function T(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return r.text(); }
+/* Dades que canvien poc (horaris, vies, estacions): es guarden 12 h al dispositiu (IndexedDB).
+   Així recarregar la pàgina no torna a demanar-les a FGC, i si FGC bloqueja temporalment (error 429) es fa servir la còpia. */
+const DESAT_TTL = 12*3600e3;
+const idb = (()=>{ let p=null; return ()=> p || (p=new Promise((ok,ko)=>{ try{ const r=indexedDB.open('trens-desat',1); r.onupgradeneeded=()=>r.result.createObjectStore('d'); r.onsuccess=()=>ok(r.result); r.onerror=()=>ko(r.error); }catch(e){ ko(e); } })); })();
+async function llegirDesat(k){ try{ const db=await idb(); return await new Promise(ok=>{ const q=db.transaction('d').objectStore('d').get(k); q.onsuccess=()=>ok(q.result||null); q.onerror=()=>ok(null); }); }catch(e){ return null; } }
+async function escriureDesat(k,v){ try{ const db=await idb(); db.transaction('d','readwrite').objectStore('d').put({t:Date.now(), v}, k); }catch(e){} }
+async function desat(clau, obtenir){
+  const c=await llegirDesat(clau);
+  if(c && Date.now()-c.t < DESAT_TTL) return c.v;
+  try{ const v=await obtenir(); escriureDesat(clau, v); return v; }
+  catch(e){ if(c) return c.v; throw e; }
+}
 async function B(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return netejarPB(new Uint8Array(await r.arrayBuffer())); }
 // A vegades el servidor d'FGC enganxa avisos de PHP ("<br /><b>Warning</b>…") davant de les dades binàries: se salten.
 function netejarPB(b){
@@ -838,12 +850,13 @@ setInterval(registrarSegundo, 1000);
 /* ================= CARGA INICIAL ================= */
 let zipUrls=null;
 async function urlGTFS(n){
-  if(!zipUrls){ const z=await J(`${BASE}/gtfs_zip/records?limit=20`); zipUrls={}; z.results.forEach(r=>zipUrls[r.file.filename]=r.file.url); }
+  if(!zipUrls){ const z=await desat('gtfs_zip', ()=>J(`${BASE}/gtfs_zip/records?limit=20`)); zipUrls={}; z.results.forEach(r=>zipUrls[r.file.filename]=r.file.url); }
   return zipUrls[n];
 }
 async function cargarBase(){
   $('loadTxt').textContent='Estacions…';
-  const [stopsTxt, routesTxt, shapesTxt] = await Promise.all([T(await urlGTFS('stops.txt')), T(await urlGTFS('routes.txt')), T(await urlGTFS('shapes.txt')).catch(()=>'')]);
+  const TG = n => desat('f:'+n, async()=>T(await urlGTFS(n)));
+  const [stopsTxt, routesTxt, shapesTxt] = await Promise.all([TG('stops.txt'), TG('routes.txt'), TG('shapes.txt').catch(()=>'')]);
   // Trazados de cada viaje (para mover los trenes por la vía)
   const tmp=new Map();
   shapesTxt.split('\n').slice(1).forEach(l=>{ const c=l.split(','); if(c.length<4) return; let a=tmp.get(c[0]); if(!a){a=[];tmp.set(c[0],a);} a.push([+c[3],+c[1],+c[2]]); });
@@ -859,7 +872,7 @@ async function cargarBase(){
 }
 // Horario completo (6 MB): se descarga en segundo plano, después de enseñar los trenes
 async function cargarHorarios(){
-  const [stTxt, calTxt] = await Promise.all([T(await urlGTFS('stop_times.txt')), urlGTFS('calendar_dates.txt').then(u=>u?T(u):'').catch(()=>'')]);
+  const [stTxt, calTxt] = await Promise.all([desat('f:stop_times.txt', async()=>T(await urlGTFS('stop_times.txt'))), desat('f:calendar_dates.txt', async()=>{ const u=await urlGTFS('calendar_dates.txt'); return u?T(u):''; }).catch(()=>'')]);
   // serveis que circulen avui (el trip_id d'FGC comença pel service_id)
   const hoy=todayStr(); S.svcHoy=new Set();
   S.cal=new Map();
@@ -884,7 +897,7 @@ async function cargarHorarios(){
 }
 async function cargarLineas(){
   try{
-    const r = await J(`${BASE}/gtfs_routes/records?limit=50&select=route_id,route_short_name,route_color,shape`);
+    const r = await desat('gtfs_routes', ()=>J(`${BASE}/gtfs_routes/records?limit=50&select=route_id,route_short_name,route_color,shape`));
     const bounds=[];
     r.results.forEach(x=>{
       const id=x.route_short_name||x.route_id;
@@ -968,7 +981,7 @@ async function cargarRT(){
     J(`${BASE}/posicionament-dels-trens/exports/json`),
     J(`${BASE}/trip-updates-gtfs_realtime/records?limit=1`)
   ]);
-  try{ const tu=parseTripUpdates(await B(tuMeta.results[0].file.url)); S.rt=tu.map; S.feedTime=tu.time; }
+  try{ const u=tuMeta.results[0].file.url; if(u!==S.tuUrl){ const tu=parseTripUpdates(await B(u)); S.rt=tu.map; S.feedTime=tu.time; S.tuUrl=u; } }
   catch(e){ console.warn('Sin trip updates', e); }
   await completarViajes([...S.rt.keys(), ...geo.map(g=>g.id)]);
   construirTrenes(geo);
@@ -1833,14 +1846,15 @@ $('locBtn').onclick=()=>{
 };
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
-async function ciclo(){
-  if(S.busy) return; S.busy=true;
+async function ciclo(forcar){
+  if(S.busy || (!forcar && document.hidden) || Date.now()<(S.pausaFins||0)) return; S.busy=true;
   try{
     await cargarRT(); fallos=0;
     medirVelocidades(); pintarTodo();
     setLive('ok', S.horarios ? 'En directe' : 'En directe · calculant retards…');
   }catch(e){
     console.error(e); fallos++;
+    if(String(e&&e.message).startsWith('429')) S.pausaFins=Date.now()+90000;   // FGC demana anar més a poc a poc
     setLive('err', fallos>2 ? 'Sense connexió amb FGC. Reintentant…' : 'Reintentant…');
   } finally { S.busy=false; }
 }
@@ -1849,7 +1863,7 @@ async function ciclo(){
     await Promise.all([cargarBase(), cargarLineas()]);
     $('loadTxt').textContent='Posició dels trens…';
     aplicarVies(); pintarEstaciones(); zoomCls(); encuadrar();
-    await ciclo();
+    await ciclo(true);
     // Los retrasos exactos aparecen en cuanto llega el horario
     cargarHorarios().then(()=>ciclo()).catch(e=>console.warn('Sin horario', e));
   }catch(e){
@@ -1867,7 +1881,8 @@ async function ciclo(){
   if(esMobil()) tancarFull();
   setInterval(()=>{ if(S.mode==='favs' && !S.quan) pintarFavs(); }, 20000);
   setInterval(ciclo, REFRESH);
-  setInterval(cargarAvisos, 120000);
+  setInterval(cargarAvisos, 600000);
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden) ciclo(); });
   setInterval(()=>{ if(S.mode==='station') pintarEstacion(); }, 30000);
   setInterval(()=>{ if(S.selEst) refrescarEstacion(false); }, 15000);
 })();
