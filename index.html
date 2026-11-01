@@ -1854,7 +1854,7 @@ async function ciclo(){
     cargarHorarios().then(()=>ciclo()).catch(e=>console.warn('Sin horario', e));
   }catch(e){
     console.error(e);
-    $('loadTxt').innerHTML='No s\'han pogut carregar les dades d\'FGC.<br>Comprova la connexió i torna a carregar la pàgina.';
+    $('loadTxt').innerHTML='No s\'han pogut carregar les dades d\'FGC.<br>Comprova la connexió i torna a carregar la pàgina.<br><small style="opacity:.6">'+esc(String(e&&e.message||e)).slice(0,200)+'</small>';
     setLive('err','Sense connexió amb FGC');
     return;
   }
