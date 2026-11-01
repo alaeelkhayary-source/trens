@@ -1,6 +1,6 @@
 // Service worker mínim: permet instal·lar l'app i obrir-la sense connexió.
 // Sempre prova la xarxa primer, així sempre tens la versió i les dades més noves.
-const CACHE = 'trens-v3';
+const CACHE = 'trens-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))); self.clients.claim(); });

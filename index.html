@@ -456,7 +456,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 18</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 19</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1867,7 +1867,12 @@ async function ciclo(){
 /* ================= INSTAL·LAR COM A APP ================= */
 (function(){
   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-  if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{}));
+  if('serviceWorker' in navigator){
+    const teniaSW=!!navigator.serviceWorker.controller; let recarregat=false;
+    // quan arriba una versió nova, la web es recarrega sola un cop
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{ if(teniaSW && !recarregat){ recarregat=true; location.reload(); } });
+    window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{ r.update().catch(()=>{}); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) r.update().catch(()=>{}); }); }).catch(()=>{}));
+  }
   if(standalone) return;
   const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   let prompt=null;
