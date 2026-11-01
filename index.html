@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
-<script>(function(){try{var t=localStorage.getItem('tev-tema');var d=t?t==='fosc':matchMedia('(prefers-color-scheme: dark)').matches;if(d){document.documentElement.classList.add('dark');document.querySelector('meta[name=theme-color]').content='#15181c';}}catch(e){}})();</script>
+<script>function solBCN(d){var r=Math.PI/180,lat=41.4,lon=2.1,n=Math.floor((d-Date.UTC(d.getUTCFullYear(),0,0))/864e5),g=2*Math.PI/365*(n-1),eq=229.18*(.000075+.001868*Math.cos(g)-.032077*Math.sin(g)-.014615*Math.cos(2*g)-.040849*Math.sin(2*g)),dec=.006918-.399912*Math.cos(g)+.070257*Math.sin(g)-.006758*Math.cos(2*g)+.000907*Math.sin(2*g),ha=Math.acos(Math.cos(90.833*r)/(Math.cos(lat*r)*Math.cos(dec))-Math.tan(lat*r)*Math.tan(dec))/r,b=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());return{surt:b+(720-4*(lon+ha)-eq)*6e4,pon:b+(720-4*(lon-ha)-eq)*6e4};}
+function esNit(){var d=new Date(),s=solBCN(d);return d<s.surt||d>s.pon;}
+function temaVol(){var t=null;try{t=localStorage.getItem('tev-tema');}catch(e){}return t==='fosc'?true:t==='clar'?false:esNit();}
+(function(){try{var d=temaVol();if(d){document.documentElement.classList.add('dark');document.querySelector('meta[name=theme-color]').content='#15181c';}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -390,7 +393,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
         <h1>Trens en viu</h1>
         <div class="live"><span class="dot load" id="dot"></span><span class="clock" id="clock"></span><span id="liveTxt">Connectant…</span><span id="ago"></span></div>
         <button class="instbtn" id="instBtn" aria-label="Instal·lar com a app"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Instal·lar app</span></button>
-        <button class="temabtn" id="temaBtn" aria-label="Mode fosc" title="Mode fosc">🌙</button>
+        <button class="temabtn" id="temaBtn" aria-label="Tema" title="Tema">🌗</button>
         <a class="donbtn" id="donHead" href="#" target="_blank" rel="noopener" style="display:none" aria-label="Fer una donació">☕<span> Donar</span></a>
         <div class="hstats"><span><b id="sTotal">–</b> trens</span><span><b id="sLate">–</b> amb retard</span><span>mitjana <b id="sMed">–</b></span></div>
       </div>
@@ -432,7 +435,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 11</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 12</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1690,19 +1693,29 @@ async function comprovarAvisos(){
 setInterval(comprovarAvisos, 15000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) comprovarAvisos(); });
 
-/* ===== Mode fosc: botó ===== */
-function aplicarTema(fosc, desar){
+/* ===== Mode fosc: automàtic segons l'hora (fosc de la posta de sol a la sortida) ===== */
+const modeTema=()=>{ try{ return localStorage.getItem('tev-tema')||'auto'; }catch(e){ return 'auto'; } };
+function aplicarTema(fosc){
+  const canvi = fosc!==esFosc() || !aplicarTema.fet; aplicarTema.fet=true;
   document.documentElement.classList.toggle('dark', fosc);
   document.querySelector('meta[name=theme-color]').content = fosc?'#15181c':'#ffffff';
-  $('temaBtn').textContent = fosc?'☀️':'🌙'; $('temaBtn').title = $('temaBtn').ariaLabel = fosc?'Mode clar':'Mode fosc';
-  if(desar){ try{ localStorage.setItem('tev-tema', fosc?'fosc':'clar'); }catch(e){} }
+  const m=modeTema();
+  $('temaBtn').textContent = m==='auto'?'🌗':m==='fosc'?'🌙':'☀️';
+  $('temaBtn').title = $('temaBtn').ariaLabel = m==='auto'?'Tema automàtic segons l\'hora (toca per canviar)':m==='fosc'?'Sempre fosc (toca per canviar)':'Sempre clar (toca per canviar)';
+  if(!canvi) return;
   try{ S.gl?.getMaplibreMap()?.setStyle(estilMapa()); }catch(e){}
   capaLineas.eachLayer(g=>g.eachLayer?.(l=>{ if(l.options.className==='linfons') l.setStyle({color:fosc?'#0f1114':'#ffffff'}); }));
   try{ pintarEstaciones(); }catch(e){}
 }
-$('temaBtn').onclick=()=>aplicarTema(!esFosc(), true);
-aplicarTema(esFosc(), false);
-try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',e=>{ if(!localStorage.getItem('tev-tema')) aplicarTema(e.matches,false); }); }catch(e){}
+$('temaBtn').onclick=()=>{
+  const seg={auto:'fosc', fosc:'clar', clar:'auto'}[modeTema()];
+  try{ seg==='auto'?localStorage.removeItem('tev-tema'):localStorage.setItem('tev-tema',seg); }catch(e){}
+  aplicarTema(temaVol());
+  if(typeof avMsg==='function'){ const s=solBCN(new Date()); avMsg(seg==='auto'?`🌗 Automàtic: fosc de ${hm(s.pon)} a ${hm(s.surt)}`:seg==='fosc'?'🌙 Sempre fosc':'☀️ Sempre clar'); }
+};
+aplicarTema(temaVol());
+setInterval(()=>aplicarTema(temaVol()), 60000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) aplicarTema(temaVol()); });
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(){
