@@ -223,7 +223,11 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 @media(min-width:901px){.avsheet{align-items:center}.avbox{border-radius:20px}}
 .avbox h3{margin:0 0 4px;font-size:17px}
 .avbox .avtr{color:var(--muted);font-size:13px;margin-bottom:14px}
-.avbox .avopts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.avbox .avq{font:600 13px var(--sans);margin:0 0 8px}
+.avbox .avopts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.avbox .avcust{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);margin-bottom:8px}
+.avbox .avcust input{width:70px;padding:9px 10px;border-radius:10px;border:1px solid var(--line);font:600 15px var(--sans);text-align:center;color:var(--text)}
+.avbox .avcust input.on{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
 .avbox .avopts button{padding:12px 6px;border-radius:12px;border:1px solid var(--line);background:#fff;font:600 14px var(--sans);cursor:pointer}
 .avbox .avopts button.on{background:var(--text);color:#fff;border-color:var(--text)}
 .avbox label{display:flex;gap:10px;align-items:center;font-size:14px;margin:4px 0 14px}
@@ -398,7 +402,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 9</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 10</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -410,7 +414,9 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 </div></div>
 <div class="avsheet" id="avSheet"><div class="avbox" role="dialog" aria-label="Avís del tren">
   <h3>🔔 Avisa'm d'aquest tren</h3><div class="avtr" id="avTr"></div>
-  <div class="avopts" id="avOpts"><button data-m="5">5 min abans</button><button data-m="10" class="on">10 min abans</button><button data-m="15">15 min abans</button></div>
+  <div class="avq">Quant temps abans vols l'avís?</div>
+  <div class="avopts" id="avOpts"><button data-m="2">2 min</button><button data-m="5">5 min</button><button data-m="10" class="on">10 min</button><button data-m="15">15 min</button><button data-m="20">20 min</button><button data-m="30">30 min</button></div>
+  <div class="avcust"><span>O escriu-ho tu:</span><input type="number" id="avMin" min="1" max="120" inputmode="numeric" placeholder="—"><span>min abans</span></div>
   <label><input type="checkbox" id="avRet" checked> També si porta retard (3 min o més)</label>
   <div class="avact"><button id="avDel" class="del" style="display:none">Treure avís</button><button id="avNo">Cancel·lar</button><button id="avOk" class="ok">Activar avís</button></div>
   <div class="avnote" id="avNote">Rebràs l'avís mentre tinguis la web oberta (també en segon pla). A l'iPhone, cal tenir-la instal·lada a la pantalla d'inici.</div>
@@ -1582,7 +1588,9 @@ function obrirAvis(tid, code, data){
   const ex=avisDe(tid,code);
   $('avTr').innerHTML=`<span class="lin" style="background:${colorOf(lin)}">${esc(lin)}</span> cap a ${esc(dest)} · des de <b>${esc(nom(code))}</b>${prog?` a les <b>${hm(prog)}</b>`:''}${dia!==dataDia(0)?` · ${esc(nomDia(dia))}`:''}`;
   const m=ex?ex.min:10;
+  const preset=[...$('avOpts').querySelectorAll('button')].some(b=>+b.dataset.m===m);
   $('avOpts').querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.m===m));
+  $('avMin').value=preset?'':m; $('avMin').classList.toggle('on',!preset);
   $('avRet').checked=ex?ex.ret:true;
   $('avDel').style.display=ex?'':'none'; $('avOk').textContent=ex?'Desar':'Activar avís';
   const ios=/iPhone|iPad/.test(navigator.userAgent), inst=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
@@ -1591,13 +1599,15 @@ function obrirAvis(tid, code, data){
   $('avSheet').classList.add('show');
 }
 const tancarAvis=()=>{ $('avSheet').classList.remove('show'); avSel=null; };
-$('avOpts').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; $('avOpts').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); });
+$('avOpts').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; $('avOpts').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); $('avMin').value=''; $('avMin').classList.remove('on'); });
+$('avMin').addEventListener('input',()=>{ const v=+$('avMin').value; const ok=v>=1; $('avMin').classList.toggle('on',ok); if(ok) $('avOpts').querySelectorAll('button').forEach(x=>x.classList.remove('on')); });
 $('avNo').onclick=tancarAvis;
 $('avSheet').addEventListener('click',e=>{ if(e.target.id==='avSheet') tancarAvis(); });
 $('avDel').onclick=()=>{ if(!avSel) return; S.avisos=S.avisos.filter(a=>!(a.tid===avSel.tid&&a.code===avSel.code)); desaAvisos(); tancarAvis(); refrescarVistesAvis(); avMsg('Avís tret'); };
 $('avOk').onclick=async()=>{
   if(!avSel) return;
-  const min=+($('avOpts').querySelector('.on')?.dataset.m||10), ret=$('avRet').checked;
+  const cm=Math.round(+$('avMin').value);
+  const min=cm>=1 ? Math.min(cm,180) : +($('avOpts').querySelector('.on')?.dataset.m||10), ret=$('avRet').checked;
   if('Notification' in window && Notification.permission==='default'){ try{ await Notification.requestPermission(); }catch(e){} }
   S.avisos=S.avisos.filter(a=>!(a.tid===avSel.tid&&a.code===avSel.code));
   S.avisos.push({...avSel, min, ret, fetAbans:false, retAvisat:0});
