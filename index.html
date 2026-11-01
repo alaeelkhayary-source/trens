@@ -2,7 +2,15 @@
 <html lang="ca">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trens en viu">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Trens en viu · FGC en directe (no oficial)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -26,7 +34,7 @@ button{font-family:inherit}
 b,strong{font-weight:600}
 .num{font-variant-numeric:tabular-nums}
 .app{position:relative;height:100vh;overflow:hidden}
-#map{position:absolute;inset:0;background:#f2efe9}
+#map{position:absolute;inset:0;z-index:0;background:#f2efe9}
 .leaflet-container{background:var(--bg);font-family:var(--sans)}
 .leaflet-control-attribution{background:rgba(255,255,255,.8)!important;font-size:10px;color:var(--muted);border-radius:6px 6px 0 0;padding:1px 6px}
 .leaflet-control-attribution a{color:var(--muted)}
@@ -135,6 +143,17 @@ b,strong{font-weight:600}
 /* Ficha del tren */
 .card{position:absolute;z-index:600;left:20px;bottom:34px;width:340px;max-height:calc(100% - 170px);overflow:auto;background:var(--panel);border-radius:var(--r);padding:20px;display:none;box-shadow:var(--shadow)}
 .card.show{display:block}
+.card .grab,.card .cmore{display:none}
+.instbtn{display:none;margin-left:auto;border:none;background:var(--card);color:var(--text);font:600 12px var(--sans);padding:6px 10px;border-radius:999px;cursor:pointer;align-items:center;gap:5px}
+.instbtn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+body.can-install .instbtn{display:flex}
+.instmodal{position:fixed;inset:0;z-index:2000;background:rgba(16,24,40,.45);display:none;align-items:flex-end;justify-content:center;padding:12px}
+.instmodal.show{display:flex}
+.instbox{background:var(--panel);border-radius:20px;padding:20px 20px calc(20px + env(safe-area-inset-bottom));max-width:420px;width:100%;box-shadow:var(--shadow)}
+.instbox h3{margin:0 0 10px;font-size:17px;font-weight:600}
+.instbox ol{margin:0 0 14px;padding-left:20px;font-size:14px;line-height:1.6}
+.instbox .ios-share{display:inline-block;vertical-align:-3px;width:16px;height:16px;stroke:#007aff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.instbox button{width:100%;border:none;border-radius:12px;padding:12px;font:600 14px var(--sans);background:var(--text);color:#fff;cursor:pointer}
 .card h2{margin:0;font-size:17px;font-weight:600;line-height:1.35;padding-right:24px}
 .card .sub{color:var(--muted);margin:4px 0 12px;font-size:13px}
 .card .x{position:absolute;right:14px;top:14px;background:var(--card);border:none;color:var(--muted);font-size:18px;width:28px;height:28px;border-radius:50%;cursor:pointer;line-height:1}
@@ -211,7 +230,11 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   .app{height:100vh;height:100dvh}
   .top{top:calc(10px + env(safe-area-inset-top));left:10px;right:10px;max-width:none;gap:8px}
   .hcard{padding:10px 14px;gap:10px;border-radius:14px}
-  .hcard h1{font-size:16px}
+  .hcard{flex-wrap:nowrap}
+  .live{min-width:0;white-space:nowrap;overflow:hidden}
+  #liveTxt{overflow:hidden;text-overflow:ellipsis}
+  .instbtn{flex:none}
+  .hcard h1{font-size:16px;white-space:nowrap}
   .live{font-size:12px} #ago{display:none}
   .hstats{display:none}
   .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin:0 -10px;padding-left:10px;padding-right:10px}
@@ -230,7 +253,18 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   .sheettitle{font-size:18px;font-weight:600;margin:0 0 4px}
   .foot{padding:10px 16px}
   /* fitxa del tren a sobre de la barra */
-  .card{left:8px;right:8px;width:auto;bottom:calc(72px + env(safe-area-inset-bottom));max-height:52vh;max-height:52dvh;border-radius:18px;padding:16px;z-index:650}
+  .card{left:8px;right:8px;width:auto;bottom:calc(72px + env(safe-area-inset-bottom));max-height:42vh;max-height:42dvh;border-radius:18px;padding:8px 14px 12px;z-index:650;box-shadow:0 -4px 24px rgba(16,24,40,.16);overscroll-behavior:contain}
+  .card.exp{max-height:68vh;max-height:68dvh}
+  .card .grab{display:block;padding:4px 0 8px;margin:0 40px;touch-action:none;cursor:grab}
+  .card .grab::before{content:'';display:block;width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto}
+  .card .x{top:10px;right:10px}
+  .card h2{font-size:15px;line-height:1.3}
+  .card .sub{margin:2px 0 6px;font-size:12px}
+  .card .sub:empty{display:none}
+  .card .row{padding:3px 0;font-size:13px}
+  .card:not(.exp) .cext{display:none}
+  .card .cmore{display:block;width:100%;margin-top:8px;border:none;background:var(--card);color:var(--text);font:500 13px var(--sans);padding:9px;border-radius:10px;cursor:pointer}
+  .instbtn span{display:none}
   body.sheet .card{display:none}
   /* barra de tasques */
   .tabbar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:800;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -254,6 +288,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
       <div class="hcard">
         <h1>Trens en viu</h1>
         <div class="live"><span class="dot load" id="dot"></span><span class="clock" id="clock"></span><span id="liveTxt">Connectant…</span><span id="ago"></span></div>
+        <button class="instbtn" id="instBtn" aria-label="Instal·lar com a app"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Instal·lar app</span></button>
         <div class="hstats"><span><b id="sTotal">–</b> trens</span><span><b id="sLate">–</b> amb retard</span><span>mitjana <b id="sMed">–</b></span></div>
       </div>
       <div class="chips" id="chips"></div>
@@ -289,11 +324,16 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
     <div class="list" id="list"></div>
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
-      <div class="creator">Creador: <b>Alae</b></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 3</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
 </div>
+<div class="instmodal" id="instModal"><div class="instbox">
+  <h3>Afegeix Trens en viu a la pantalla d'inici</h3>
+  <ol id="instSteps"></ol>
+  <button id="instOk">Entesos</button>
+</div></div>
 <nav class="tabbar" id="tabbar"><button data-tab="mapa" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Mapa</span></button><button data-tab="favs"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Preferides</span></button><button data-tab="late"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span>Retards</span><i class="badge" id="badgeLate" style="display:none"></i></button><button data-tab="station"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-3M15 21l2-3"/></svg><span>Estació</span></button><button data-tab="avisos"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg><span>Avisos</span></button></nav>
 <script>
 /* ================= CONFIG ================= */
@@ -502,6 +542,29 @@ function sEn(mo, t){
   for(let i=1;i<k.length;i++){ if(t<=k[i].t){ const a=k[i-1], b=k[i]; return a.s+(b.s-a.s)*((t-a.t)/(b.t-a.t||1)); } }
   return k[k.length-1].s;
 }
+// Posició (metres sobre el traçat) on hauria de ser el tren ara segons les hores previstes en temps real
+const cacheParS=new Map();
+function sSegonsHorari(t, sh, ahora){
+  const par=t.par; if(!par||par.length<2) return null;
+  let ss=cacheParS.get(t.id);
+  if(!ss||ss.length!==par.length){
+    ss=[]; let idx=0, ant=0;
+    par.forEach(p=>{ const e=S.stops[parentOf(p.stop)]||S.stops[p.stop];
+      if(!e||!isFinite(e.lat)){ ss.push(null); return; }
+      const pr=proyectar(sh,e.lat,e.lon,idx); if(pr.d>500){ ss.push(null); return; }
+      idx=Math.max(idx,pr.i); ant=Math.max(ant,pr.s); ss.push(ant); });
+    cacheParS.set(t.id,ss);
+  }
+  let a=null;
+  for(let i=0;i<par.length;i++){
+    if(ss[i]==null) continue;
+    const arr=par[i].est??par[i].prog, dep=par[i].estD??par[i].progD??arr;
+    if(ahora<arr){ if(!a) return ss[i]; const k=(ahora-a.dep)/((arr-a.dep)||1); return a.s+(ss[i]-a.s)*Math.max(0,Math.min(1,k)); }
+    if(ahora<=dep) return ss[i];
+    a={s:ss[i],dep};
+  }
+  return a?a.s:null;
+}
 function prepararMovimiento(t){
   const info=S.trips.get(t.id); const sh=info?.shape!=null ? S.shapes.get(String(info.shape)) : null;
   if(!sh || !t.par || t.sigIdx<0){ delete S.motion[t.id]; return; }
@@ -509,19 +572,33 @@ function prepararMovimiento(t){
   const real=proyectar(sh, t.pos[0], t.pos[1]);
   if(real.d>400){ delete S.motion[t.id]; return; }       // el tren no está sobre este trazado
   const prev=S.motion[t.id];
-  let s0=real.s;
-  if(prev){ const disp=sEn(prev, ahora); if(Math.abs(disp-real.s)<1200) s0=disp; }  // sin saltos hacia atrás
+  // La posició d'FGC pot arribar amb minuts de retard: si l'horari en temps real diu que el tren
+  // ja ha d'anar més endavant (fins a 4 km), es fa servir aquesta.
+  const sh_ = sSegonsHorari(t, sh, ahora);
+  const base = (sh_!=null && sh_>real.s && sh_-real.s<4000) ? sh_ : real.s;
+  let s0=base;
+  const realNova = !prev || prev.realS==null || Math.abs(prev.realS-real.s)>5;
+  if(prev){ const disp=sEn(prev, ahora);
+    if(!realNova){ if(disp>=real.s-50) s0=Math.max(disp, base>disp+1200?base:disp); }
+    else if(Math.abs(disp-base)<1200) s0=disp; }
   const keys=[{t:ahora, s:s0}]; let idx=Math.max(0, real.i-2), sAnt=s0;
   const paradas=t.par.slice(t.sigIdx, t.sigIdx+8);
   paradas.forEach((p,j)=>{
     const e=S.stops[parentOf(p.stop)]||S.stops[p.stop]; if(!e||!isFinite(e.lat)) return;
     const pr=proyectar(sh, e.lat, e.lon, idx); if(pr.d>500) return;
     idx=Math.max(idx, pr.i);
+    const aturatAqui = j===0 && t.parado && s0 <= pr.s+30;
+    if(!aturatAqui && pr.s < s0-30) return;   // parada que (segons l'estimació) ja ha passat
     const s=Math.max(sAnt, pr.s);
     let llega=p.est??p.prog, sale=p.estD??p.progD??llega;
     const ultimo=keys[keys.length-1];
     const nomE=nom(p.stop);
-    if(j===0 && t.parado){ keys.push({t:Math.max(ahora+1000, sale), s:s0, nom:nomE, tipo:'sale'}); sAnt=s0; return; }
+    if(aturatAqui){
+      // Aturat: espera fins a l'hora de sortida. Si ja fa més d'1 min que havia de sortir, la dada d'FGC
+      // probablement va endarrerida, així que el tren surt (no es queda clavat a l'estació).
+      const marge = 30000;
+      const surt = sale > ahora ? sale : (ahora - sale < marge ? sale + marge : ahora);
+      keys.push({t:Math.max(ahora+1, surt), s:s0, nom:nomE, tipo:"sale"}); sAnt=s0; return; }
     // si la hora estimada ya ha pasado, se le da el tiempo justo para llegar (≈ 45 km/h)
     const minimo = ultimo.t + Math.max(1000, (s-ultimo.s)/12.5*1000);
     if(llega < minimo) llega = minimo;
@@ -532,7 +609,7 @@ function prepararMovimiento(t){
   if(keys.length<2){ delete S.motion[t.id]; return; }
   if(prev) keys.forEach(k=>{ if(k.nom && prev.keys.some(o=>o.hecho && o.nom===k.nom && o.tipo===k.tipo)) k.hecho=true; });
   keys.forEach(k=>{ if(k.nom && k.t<=ahora) k.hecho=true; });
-  S.motion[t.id]={sh, keys};
+  S.motion[t.id]={sh, keys, realS:real.s};
 }
 function velocidadMov(id){
   const mo=S.motion[id]; if(!mo) return null; const a=Date.now();
@@ -773,6 +850,7 @@ function construirTrenes(geo){
   S.trains.forEach(prepararMovimiento);
   S.trains.forEach(compararEstado);
   Object.keys(S.prevState).forEach(id=>{ if(!vivos.has(id)){ delete S.prevState[id]; delete S.track[id]; } });
+  [...cacheParS.keys()].forEach(id=>{ if(!vivos.has(id)) cacheParS.delete(id); });
 }
 
 /* ================= PINTAR ================= */
@@ -1041,6 +1119,7 @@ document.addEventListener('click',e=>{
 
 /* ===== Ficha de la estación (al tocarla en el mapa) ===== */
 async function abrirEstacion(code, centrar){
+  if(S.selEst!==code) $('card').classList.remove('exp');
   S.sel=null; S.follow=false; S.selEst=code;
   if(centrar){ const s=S.stops[code]; if(s) map.panTo([s.lat,s.lon]); }
   pintarTrenes(); pintarEstaciones();
@@ -1054,17 +1133,20 @@ async function refrescarEstacion(primera){
     if(S.selEst!==code) return;
     const lin=lineasEstacion(code);
     c.style.borderLeftColor='transparent';
-    c.innerHTML=`<button class="x" aria-label="Tancar">×</button>
+    const mob=window.innerWidth<=900, nPri=mob?3:8;
+    const llista=salidas==null?'<div class="empty">Carregant…</div>':(salidas.slice(0,nPri).map(s=>htmlSalida(s,Date.now())).join('')||'<div class="empty">Avui ja no queden més trens des d\'aquesta estació.</div>');
+    const resta=salidas&&mob?salidas.slice(nPri,8).map(s=>htmlSalida(s,Date.now())).join(''):'';
+    c.innerHTML=`<button class="x" aria-label="Tancar">×</button>`+cardShell(`
       <div class="sub" style="margin:0 0 2px;text-transform:uppercase;letter-spacing:.8px;font-size:11px">Estació</div>
       <h2>${esc(nom(code))}</h2>
       ${lin.length?`<div class="slines">${lin.map(l=>`<span class="lin" style="background:${colorOf(l)}">${esc(l)}</span>`).join('')}</div>`:''}
-      <div class="accbox ${acc.cls}"><span class="ai">${acc.icon}</span><div><b>${esc(acc.txt)}</b>
+      ${mob?`<div class="reg"><h4><span>Propers trens</span><span class="live" style="font-size:11px"><span class="dot"></span>temps real</span></h4></div><div class="slist">${llista}</div>`:''}`,
+      `${mob&&resta?`<div class="slist">${resta}</div>`:''}<div class="accbox ${acc.cls}"><span class="ai">${acc.icon}</span><div><b>${esc(acc.txt)}</b>
         ${acc.an.length?`<div class="andanes">${acc.an.sort((a,b)=>String(a.andana).localeCompare(String(b.andana),'ca',{numeric:true})).map(a=>`<span class="${a.wc===1?'si':a.wc===2?'no':'nd'}">Andana ${esc(a.andana)} ${a.wc===1?'✓':a.wc===2?'✗':'?'}</span>`).join('')}</div>`:''}
       </div></div>
-      <div class="reg"><h4><span>Propers trens</span><span class="live" style="font-size:11px"><span class="dot"></span>temps real</span></h4></div>
-      <div class="slist">${salidas==null?'<div class="empty">Carregant…</div>':(salidas.slice(0,8).map(s=>htmlSalida(s,Date.now())).join('')||'<div class="empty">Avui ja no queden més trens des d\'aquesta estació.</div>')}</div>
+      ${mob?'':`<div class="reg"><h4><span>Propers trens</span><span class="live" style="font-size:11px"><span class="dot"></span>temps real</span></h4></div><div class="slist">${llista}</div>`}
       <button class="more" id="verTotes">Veure totes les sortides →</button>
-      <div class="accnote">Accessibilitat segons les dades oficials d'FGC.</div>`;
+      <div class="accnote">Accessibilitat segons les dades oficials d'FGC.</div>`,'Més trens i accessibilitat');
     c.classList.add('show');
     c.querySelector('.x').onclick=cerrar;
     $('verTotes').onclick=()=>{ elegirEstacion(code); };
@@ -1073,11 +1155,33 @@ async function refrescarEstacion(primera){
   pintar(await salidasEstacion(code));
 }
 
+/* ===== Fitxa compacta al mòbil (part principal + detalls desplegables) ===== */
+function cardShell(main, ext, etiq){
+  const obert=$('card').classList.contains('exp');
+  return `<div class="grab" aria-hidden="true"></div>${main}${ext?`<button class="cmore" data-etiq="${esc(etiq)}">${obert?'Mostrar menys ▴':esc(etiq)+' ▾'}</button><div class="cext">${ext}</div>`:''}`;
+}
+function cardExpand(v){
+  const c=$('card'); c.classList.toggle('exp',v);
+  const b=c.querySelector('.cmore'); if(b) b.textContent=v?'Mostrar menys ▴':(b.dataset.etiq||'Més detalls')+' ▾';
+  if(!v) c.scrollTop=0;
+}
+(function(){
+  const c=$('card'); let y0=null, dy=0;
+  c.addEventListener('click',e=>{ if(e.target.closest('.cmore')){ cardExpand(!c.classList.contains('exp')); } else if(e.target.closest('.grab')) cardExpand(!c.classList.contains('exp')); });
+  c.addEventListener('touchstart',e=>{ if(!e.target.closest('.grab,h2,.sub')) return; y0=e.touches[0].clientY; dy=0; },{passive:true});
+  c.addEventListener('touchmove',e=>{ if(y0==null) return; dy=e.touches[0].clientY-y0; if(dy>0) c.style.transform=`translateY(${dy}px)`; },{passive:true});
+  c.addEventListener('touchend',()=>{ if(y0==null) return; c.style.transform='';
+    if(dy>70){ if(c.classList.contains('exp')) cardExpand(false); else cerrar(); }
+    else if(dy<-40) cardExpand(true);
+    y0=null; });
+})();
+
 /* ===== Tarjeta del tren ===== */
 function abrirTren(id, centrar){
   const t=S.trains.find(x=>x.id===id);
   if(!t){ cerrar(); return; }
   const cambio=S.sel!==id;
+  if(cambio) $('card').classList.remove('exp');
   if(S.selEst){ S.selEst=null; pintarEstaciones(); }
   S.selRuta=null;
   S.sel=id; if(centrar){ S.follow=true; const m=S.markers[id]; map.panTo(m?m.getLatLng():t.pos); }
@@ -1097,26 +1201,26 @@ function refrescarTarjeta(){
   const prox = t.par ? t.par.slice(Math.max(0,t.sigIdx)) : [];
   const avisos=(S.alerts||[]).filter(a=>a.ents.some(e=>e.trip===id)).map(a=>a.header).filter(Boolean);
   const vel = velocidad(t);
-  c.innerHTML=`<button class="x" aria-label="Cerrar">×</button>
+  c.innerHTML=`<button class="x" aria-label="Tancar">×</button>`+cardShell(`
     <h2><span style="color:${colorOf(t.lin)}">${esc(t.lin)}</span> ${esc(nom(t.origen))} → ${esc(destinoTren(t))}</h2>
     <div class="sub">${t.unidad?'Unitat sèrie '+esc(t.unidad):''}</div>
     <div class="row"><span>Retard</span><span style="color:${col};font-weight:700">${d==null?'sense dades':d>0?d+' min':d<0?(-d)+' min avançat':'a l\'hora'}</span></div>
-    ${fin?`<div class="row"><span>Arribada prevista</span><span>${hm(fin.prog)}</span></div>
-    <div class="row"><span>Arribada estimada</span><span>${hm(fin.est??fin.prog)}</span></div>`:''}
-    ${vel?`<div class="row"><span>Velocitat</span><span>≈ ${vel} km/h</span></div>`:''}
     <div class="row"><span>On és</span><span>${esc(dondeTren(t))}</span></div>
     ${sig&&!t.parado?`<div class="row"><span>Arriba a ${esc(nom(sig.stop))}</span><span>${hm(sig.est??sig.prog)}</span></div>`:''}
+    ${fin?`<div class="row"><span>Arribada a ${esc(nom(fin.stop))}</span><span>${hm(fin.est??fin.prog)}</span></div>`:''}
+    ${avisos.length?`<div class="avis">⚠ ${avisos.map(esc).join('<br>⚠ ')}</div>`:''}`,`
+    ${fin?`<div class="row"><span>Arribada prevista (horari)</span><span>${hm(fin.prog)}</span></div>`:''}
+    ${vel?`<div class="row"><span>Velocitat</span><span>≈ ${vel} km/h</span></div>`:''}
     ${t.ocup.length?`<div class="row"><span>Ocupació</span><span></span></div><div class="occ">${t.ocup.map(o=>`<div><i style="width:${Math.min(100,o)}%;background:${o>70?'var(--bad)':o>40?'var(--warn)':'var(--ok)'}"></i><b>${Math.round(o)}%</b></div>`).join('')}</div>`:''}
-    ${avisos.length?`<div class="avis">⚠ ${avisos.map(esc).join('<br>⚠ ')}</div>`:''}
     <ul class="stops">${prox.map(p=>{ const dd=p.est!=null?Math.round((p.est-p.prog)/60000):0; return `<li><span>${esc(nom(p.stop))}</span>${dd?`<s>${hm(p.prog)}</s>`:'<span></span>'}<b style="color:${dd>=10?'var(--bad)':dd>=3?'var(--warn)':'var(--text)'}">${hm(p.est??p.prog)}</b></li>`; }).join('')}</ul>
     <div class="reg"><h4><span>Registre de moviments</span><span>${(S.log[id]||[]).length}</span></h4>
-      <ol>${(S.log[id]||[]).map(e=>`<li class="${e.tipo}${e.nuevo?' new':''}"><time>${hms(e.t)}</time><span>${esc(e.txt)}${e.tipo==='est'?' <small style="color:var(--dim)">(estimat)</small>':''}</span></li>`).join('')||'<li><time></time><span>Esperant moviments…</span></li>'}</ol></div>`;
+      <ol>${(S.log[id]||[]).map(e=>`<li class="${e.tipo}${e.nuevo?' new':''}"><time>${hms(e.t)}</time><span>${esc(e.txt)}${e.tipo==='est'?' <small style="color:var(--dim)">(estimat)</small>':''}</span></li>`).join('')||'<li><time></time><span>Esperant moviments…</span></li>'}</ol></div>`,'Parades i detalls');
   (S.log[id]||[]).forEach(e=>e.nuevo=false);
   c.classList.add('show');
   c.querySelector('.x').onclick=cerrar;
   c.scrollTop=scrollCard; const ol=c.querySelector('.reg ol'); if(ol) ol.scrollTop=scrollReg;
 }
-function cerrar(){ $('card').classList.remove('show'); const habiaEst=!!S.selEst; S.sel=null; S.selEst=null; S.selRuta=null; S.follow=false; capaRuta.clearLayers(); pintarTrenes(); if(habiaEst) pintarEstaciones(); }
+function cerrar(){ $('card').classList.remove('show','exp'); const habiaEst=!!S.selEst; S.sel=null; S.selEst=null; S.selRuta=null; S.follow=false; capaRuta.clearLayers(); pintarTrenes(); if(habiaEst) pintarEstaciones(); }
 
 /* ===== Trajectòria d'un tren ===== */
 const capaRuta=L.layerGroup().addTo(map);
@@ -1152,6 +1256,7 @@ async function verTrajecte(tid, est){
   if(!S.trips.has(tid)) await completarViajes([tid]);
   const enMarxa=S.trains.find(x=>x.id===tid);
   if(enMarxa){ S.selRuta=null; abrirTren(tid,false); dibuixarTrajecte(tid,true); return; }
+  if(S.selRuta?.tid!==tid) $('card').classList.remove('exp');
   S.sel=null; S.follow=false; S.selRuta={tid, est}; pintarTrenes();
   dibuixarTrajecte(tid,true);
   pintarTrajecte();
@@ -1163,14 +1268,14 @@ function pintarTrajecte(){
   const ini=par[0], fi=par[par.length-1];
   const surt=ini.estD??ini.progD, falta=Math.round((surt-ara)/60000);
   const real=par.some(p=>p.rt);
-  c.innerHTML=`<button class="x" aria-label="Tancar">×</button>
+  c.innerHTML=`<button class="x" aria-label="Tancar">×</button>`+cardShell(`
     <h2><span style="color:${col}">${esc(lin)}</span> ${esc(nom(ini.stop))} → ${esc(info.headsign||nom(fi.stop))}</h2>
     <div class="sub">${falta>0?`Encara no ha sortit · surt d'${esc(nom(ini.stop))} en ${falta} min (${hm(surt)})`:'Trajecte'} · ${real?'<span style="color:var(--ok)">temps real</span>':'segons horari'}</div>
     <div class="row"><span>Sortida</span><span>${hm(surt)}</span></div>
     <div class="row"><span>Arribada a ${esc(nom(fi.stop))}</span><span>${hm(fi.est??fi.prog)}</span></div>
-    <div class="row"><span>Parades</span><span>${par.length}</span></div>
+    <div class="row"><span>Parades</span><span>${par.length}</span></div>`,`
     <ul class="stops">${par.map(p=>{ const dd=p.est!=null?Math.round((p.est-p.prog)/60000):0; const sel=r.est&&parentOf(p.stop)===r.est;
-      return `<li class="${sel?'here':''}"><span>${sel?'📍 ':''}${esc(nom(p.stop))}</span>${dd?`<s>${hm(p.prog)}</s>`:'<span></span>'}<b style="color:${dd>=10?'var(--bad)':dd>=3?'var(--warn)':'var(--text)'}">${hm(p.est??p.prog)}</b></li>`; }).join('')}</ul>`;
+      return `<li class="${sel?'here':''}"><span>${sel?'📍 ':''}${esc(nom(p.stop))}</span>${dd?`<s>${hm(p.prog)}</s>`:'<span></span>'}<b style="color:${dd>=10?'var(--bad)':dd>=3?'var(--warn)':'var(--text)'}">${hm(p.est??p.prog)}</b></li>`; }).join('')}</ul>`,'Veure les parades');
   c.classList.add('show');
   c.querySelector('.x').onclick=cerrar;
 }
@@ -1307,6 +1412,28 @@ async function ciclo(){
   setInterval(cargarAvisos, 120000);
   setInterval(()=>{ if(S.mode==='station') pintarEstacion(); }, 30000);
   setInterval(()=>{ if(S.selEst) refrescarEstacion(false); }, 15000);
+})();
+
+/* ================= INSTAL·LAR COM A APP ================= */
+(function(){
+  const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+  if(standalone) return;
+  const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  let prompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); prompt=e; document.body.classList.add('can-install'); });
+  window.addEventListener('appinstalled',()=>{ prompt=null; document.body.classList.remove('can-install'); });
+  if(ios) document.body.classList.add('can-install');
+  const share='<svg class="ios-share" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>';
+  $('instBtn').onclick=async()=>{
+    if(prompt){ prompt.prompt(); await prompt.userChoice.catch(()=>{}); prompt=null; document.body.classList.remove('can-install'); return; }
+    $('instSteps').innerHTML = ios
+      ? `<li>Obre la web a <b>Safari</b>.</li><li>Toca el botó <b>Compartir</b> ${share} (a la barra de baix o al menú ⋯).</li><li>Tria <b>Afegir a la pantalla d'inici</b> i després <b>Afegir</b>.</li>`
+      : `<li>Obre el menú del navegador (⋮).</li><li>Tria <b>Instal·lar aplicació</b> o <b>Afegir a la pantalla d'inici</b>.</li>`;
+    $('instModal').classList.add('show');
+  };
+  $('instOk').onclick=()=>$('instModal').classList.remove('show');
+  $('instModal').addEventListener('click',e=>{ if(e.target.id==='instModal') $('instModal').classList.remove('show'); });
 })();
 </script>
 </body>
