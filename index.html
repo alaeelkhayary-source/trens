@@ -34,11 +34,9 @@ function temaVol(){var t=null;try{t=localStorage.getItem('tev-tema');}catch(e){}
 <meta name="twitter:image" content="https://trensenviu.cat/og.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script src="mapagl.js?v=1"></script>
 <style>
 :root{
   --bg:#f4f5f7; --panel:#ffffff; --card:#f6f7f9; --line:#e6e9ee; --track:#d3d9e0;
@@ -55,9 +53,10 @@ b,strong{font-weight:600}
 .num{font-variant-numeric:tabular-nums}
 .app{position:relative;height:100vh;overflow:hidden}
 #map{position:absolute;inset:0;z-index:0;background:#f2efe9}
-.leaflet-container{background:var(--bg);font-family:var(--sans)}
-.leaflet-control-attribution{background:rgba(255,255,255,.8)!important;font-size:10px;color:var(--muted);border-radius:6px 6px 0 0;padding:1px 6px}
-.leaflet-control-attribution a{color:var(--muted)}
+.maplibregl-map{font-family:var(--sans)}
+.maplibregl-ctrl-attrib{font-size:10px}
+.maplibregl-ctrl-attrib a{color:var(--muted)}
+
 
 /* Cabecera flotante */
 .top{position:absolute;z-index:500;top:20px;left:20px;display:flex;flex-direction:column;gap:10px;max-width:calc(100% - 460px)}
@@ -125,9 +124,15 @@ b,strong{font-weight:600}
 .accline.ok{color:#0f7a43}.accline.part{color:#9a5b00}.accline.no{color:#b3261e}
 .stl.sel{font-weight:700;color:var(--text)}
 /* Bombolla d'estació */
-.estpop .leaflet-popup-content-wrapper{border-radius:14px;box-shadow:0 2px 6px rgba(16,24,40,.08),0 12px 32px rgba(16,24,40,.18);padding:0}
-.estpop .leaflet-popup-content{margin:14px 16px;font-family:var(--sans);color:var(--text);width:260px!important}
-.estpop .leaflet-popup-tip{box-shadow:none}
+.estpop .maplibregl-popup-content{border-radius:14px;box-shadow:0 2px 6px rgba(16,24,40,.08),0 12px 32px rgba(16,24,40,.18);padding:14px 16px;background:var(--panel);color:var(--text);width:292px;max-width:calc(100vw - 40px);box-sizing:border-box}
+.estpop .maplibregl-popup-content{font-family:var(--sans)}
+.estpop .maplibregl-popup-tip{border-top-color:var(--panel)!important}
+.ltt{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:4px 8px;font:12px var(--sans);white-space:nowrap;box-shadow:0 2px 8px rgba(16,24,40,.15);pointer-events:none}
+.nordbtn{position:absolute;z-index:500;right:440px;bottom:206px;width:40px;height:40px;border-radius:12px;border:none;background:var(--panel);box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.nordbtn[hidden]{display:none}
+.nordbtn svg{width:22px;height:22px;transition:transform .1s}
+.nordbtn path{fill:var(--dim)}
+.nordbtn path.n{fill:#e5484d}
 .ep .ept{font-size:16px;font-weight:600;margin-bottom:6px}
 .ep .slines{margin:0 0 10px}
 .ep .epd{display:block;font:400 12px var(--sans);color:var(--muted);margin-top:2px}
@@ -303,7 +308,8 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   .chip{flex:none;padding:5px 10px;font-size:12px}
   .zoom{display:none}
   .locbtn{right:12px;bottom:calc(var(--tbh) + var(--tbb) + 34px);width:46px;height:46px;border-radius:50%}
-  .leaflet-bottom{bottom:calc(var(--tbh) + var(--tbb) + 6px)}
+  .maplibregl-ctrl-bottom-left{bottom:calc(var(--tbh) + var(--tbb) + 6px)}
+  .nordbtn{right:12px;bottom:calc(var(--tbh) + var(--tbb) + 90px);width:46px;height:46px;border-radius:50%}
   /* panell com a full que puja des de baix */
   aside{position:fixed;left:0;right:0;top:auto;bottom:0;width:auto;height:78vh;height:78dvh;border-radius:20px 20px 0 0;z-index:700;
     transform:translateY(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding-bottom:calc(var(--tbh) + var(--tbb) + 8px);box-shadow:0 -8px 30px rgba(16,24,40,.18)}
@@ -377,20 +383,16 @@ html.dark{color-scheme:dark;
   --ok:#35c27a; --warn:#f0a630; --bad:#ff6369;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45)}
 html.dark body{background:var(--bg)}
-html.dark .leaflet-container,html.dark #map{background:#1b1e23}
-html.dark .leaflet-control-attribution{background:rgba(26,29,34,.85)!important}
-html.dark .leaflet-control-attribution a{color:var(--muted)}
+html.dark #map{background:#1b1e23}
+html.dark .maplibregl-ctrl-attrib{background:rgba(26,29,34,.85)!important;color:var(--muted)}
+html.dark .maplibregl-ctrl-attrib-button{filter:invert(1)}
 html.dark .chip.off{background:rgba(26,29,34,.6)}
 html.dark .tlab,html.dark .mode.on,html.dark .search:focus,html.dark .bell,html.dark .avbox,html.dark .avbox .avopts button,html.dark .avbox .avact button,
 html.dark .qsel,html.dark .donbtn,html.dark .dontoast,html.dark .favbtn,html.dark .andanes span,html.dark .avbox .avcust input{background:var(--panel);color:var(--text)}
 html.dark .tlab.sel,html.dark .tab.on,html.dark .avbox .avopts button.on,html.dark .avbox .avact .ok,html.dark #qAra,html.dark .instbox button,html.dark .dontoast .dgo,html.dark .avmsg{background:var(--text);color:#111}
 html.dark .avbox .avact .del{color:var(--bad)}
-html.dark .leaflet-popup-content-wrapper,html.dark .leaflet-popup-tip{background:var(--panel);color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,.6)}
-html.dark .leaflet-popup-close-button{color:var(--muted)!important}
-html.dark .leaflet-tooltip{background:var(--panel);color:var(--text);border-color:var(--line)}
-html.dark .leaflet-tooltip-top:before{border-top-color:var(--panel)}
-html.dark .leaflet-tooltip-bottom:before{border-bottom-color:var(--panel)}
-html.dark .locbtn{background:var(--panel)}
+html.dark .estpop .maplibregl-popup-content{box-shadow:0 12px 32px rgba(0,0,0,.6)}
+html.dark .locbtn,html.dark .nordbtn{background:var(--panel)}
 html.dark .tabbar{background:rgba(26,29,34,.96)}
 html.dark .stl{color:#d5dbe1;text-shadow:0 0 2px #000,0 0 4px #000,0 0 6px #000}
 
@@ -421,6 +423,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
       </div>
       <div class="chips" id="chips"></div>
     </div>
+    <button class="nordbtn" id="nordBtn" aria-label="Orientar al nord" title="Orientar al nord" hidden><svg viewBox="0 0 24 24"><path class="n" d="M12 1.5 6.5 12h11z"/><path d="M12 22.5 17.5 12h-11z"/></svg></button>
     <button class="locbtn" id="locBtn" aria-label="Estació més propera" title="Estació més propera"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" class="f"/></svg></button>
     <div class="zoom"><button id="zin" aria-label="Apropar">+</button><button id="zout" aria-label="Allunyar">−</button><button id="zfit" aria-label="Veure tota la xarxa" style="font-size:14px">⤢</button></div>
     <div class="card" id="card"></div>
@@ -456,7 +459,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 24</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 25</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -623,19 +626,14 @@ function parseAlerts(buf){
 /* ================= MAPA ================= */
 const esFosc=()=>document.documentElement.classList.contains('dark');
 const estilMapa=()=>'https://tiles.openfreemap.org/styles/'+(esFosc()?'dark':'liberty');
-const map = L.map('map',{zoomControl:false, attributionControl:false, preferCanvas:false, zoomSnap:.5, wheelPxPerZoomLevel:100, inertiaDeceleration:2500}).setView([41.47,2.03],11);
+const map = L.map('map',{style:estilMapa()});
+map._styleUrl=estilMapa();
 L.control.attribution({position:'bottomleft',prefix:false}).addTo(map);
-// Mapa realista (OpenFreeMap, gratis y sin clave). Si no carga, mapa de OpenStreetMap.
-const ATRIB='<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
-try{
-  if(!L.maplibreGL || !window.maplibregl) throw new Error('sin MapLibre');
-  S.gl=L.maplibreGL({style:estilMapa(), attribution:ATRIB, fadeDuration:0, antialias:false, padding:.1, pixelRatio:Math.min(window.devicePixelRatio||1, 2), refreshExpiredTiles:false, maxTileCacheSize:300, crossSourceCollisions:false}).addTo(map);
-}catch(e){
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
-}
 const capaLineas = L.layerGroup().addTo(map);
 const capaEst = L.layerGroup().addTo(map);
 const capaTrenes = L.layerGroup().addTo(map);
+$('nordBtn').onclick=()=>map.resetNorth();
+map.on('rotate rotateend moveend',()=>{ const b=map.getBearing(), el=$('nordBtn'); el.hidden=Math.abs(b)<0.5; el.querySelector('svg').style.transform=`rotate(${-b}deg)`; });
 $('zin').onclick=()=>map.zoomIn(); $('zout').onclick=()=>map.zoomOut();
 $('zfit').onclick=()=>encuadrar();
 let limites=null;
@@ -773,7 +771,7 @@ function velocidadMov(id){
 }
 let mapaMovent=false, ultimMov=0;
 map.on('movestart zoomstart',()=>{ mapaMovent=true; });
-map.on('moveend zoomend',()=>{ mapaMovent=false; moverTrenes(true); });
+map.on('moveend zoomend',()=>{ if(map._panning) return; mapaMovent=false; moverTrenes(true); });
 function moverTrenes(forcar){
   const ahora=Date.now();
   const vista=map.getBounds().pad(.25);
@@ -1806,7 +1804,7 @@ function aplicarTema(fosc){
   $('temaBtn').textContent = m==='auto'?'🌗':m==='fosc'?'🌙':'☀️';
   $('temaBtn').title = $('temaBtn').ariaLabel = m==='auto'?'Tema automàtic segons l\'hora (toca per canviar)':m==='fosc'?'Sempre fosc (toca per canviar)':'Sempre clar (toca per canviar)';
   if(!canvi) return;
-  try{ S.gl?.getMaplibreMap()?.setStyle(estilMapa()); }catch(e){}
+  try{ map.setBaseStyle(estilMapa()); }catch(e){}
   capaLineas.eachLayer(g=>g.eachLayer?.(l=>{ if(l.options.className==='linfons') l.setStyle({color:fosc?'#0f1114':'#ffffff'}); }));
   try{ pintarEstaciones(); }catch(e){}
 }
