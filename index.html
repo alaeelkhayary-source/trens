@@ -301,15 +301,16 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .top{pointer-events:none}
 .top .hcard,.top .chip{pointer-events:auto}
 /* Selector d'hora (trens futurs) */
-.quan{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:14px;background:#fafafa}
-.quan .qdia{position:relative;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);font:500 13px var(--sans);cursor:pointer;white-space:nowrap}
-.quan .qdia.on{background:var(--text);border-color:var(--text);color:#fff}
-.quan .qdia input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
-.quan .qlab{font:600 13px var(--sans);color:var(--text);margin-right:2px}
-.quan button{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);font:500 13px var(--sans);cursor:pointer}
-.quan button.on{background:var(--text);border-color:var(--text);color:#fff}
-.quan input{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font:500 13px var(--sans);min-width:96px}
-.quan input:focus{outline:none;border-color:var(--text)}
+.quan{display:flex;gap:8px;align-items:stretch;margin-top:10px}
+.qsel{position:relative;flex:1;display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:14px;background:#fff;cursor:pointer;min-width:0}
+.qsel .qic{font-size:18px}
+.qsel .qtx{display:flex;flex-direction:column;min-width:0;flex:1}
+.qsel .qtx b{font:600 14px var(--sans);color:var(--text)}
+.qsel .qtx small{font:400 12px var(--sans);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qsel .qch{color:var(--muted);font-size:12px}
+.qsel.on{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
+.qsel input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:0}
+#qAra{flex:none;padding:0 14px;border-radius:14px;border:1px solid var(--text);background:var(--text);color:#fff;font:500 13px var(--sans);cursor:pointer}
 .big.hora{color:var(--text);font-size:16px;font-weight:600}
 /* Donacions */
 .donbtn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font:500 13px var(--sans);cursor:pointer;text-decoration:none;white-space:nowrap}
@@ -369,19 +370,15 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
         <div class="desc" id="stDesc"></div>
       </div>
       <div class="quan" id="quan" style="display:none">
-        <span class="qlab">🕒 Quan?</span>
-        <button data-q="ara" class="on">Ara</button>
-        <button data-q="0">Avui</button>
-        <button data-q="1">Demà</button>
-        <label class="qdia" id="qdiaLab"><span id="qdiaTxt">📅 Altre dia</span><input type="date" id="quanDia" aria-label="Tria el dia"></label>
-        <input type="time" id="quanHora" step="300" aria-label="Tria l'hora">
+        <label class="qsel" id="qsel"><span class="qic">🕒</span><span class="qtx"><b id="qselTxt">Ara</b><small id="qselSub">Toca per triar dia i hora</small></span><span class="qch">▾</span><input type="datetime-local" id="quanDT" step="300" aria-label="Tria dia i hora"></label>
+        <button data-q="ara" id="qAra" style="display:none">↺ Ara</button>
       </div>
     </header>
     <div class="list" id="list"></div>
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 7</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 8</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1515,35 +1512,26 @@ async function pintarFutur(code, acc){
   if(S.station!==code || S.mode!=='station' || S.quan!==q) return;
   L_.innerHTML = sort.map(htmlFutur).join('') || `<div class="empty">No hi ha trens des d'aquesta estació a partir d'aquesta hora.</div>`;
 }
+const isoD = d => d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8);
 function marcarQuan(){
-  document.querySelectorAll('#quan button').forEach(b=>b.classList.toggle('on', S.quan ? b.dataset.q===String(S.quan.dia) : b.dataset.q==='ara'));
-  const altre=S.quan && S.quan.dia>1, d=S.quan?dataDia(S.quan.dia):dataDia(0);
-  $('qdiaLab').classList.toggle('on', !!altre);
-  $('qdiaTxt').textContent = altre ? '📅 '+nomDia(d) : '📅 Altre dia';
-  $('quanDia').value = d.slice(0,4)+'-'+d.slice(4,6)+'-'+d.slice(6,8);
-  $('quanDia').min = dataDia(0).replace(/(\d{4})(\d\d)(\d\d)/,'$1-$2-$3');
-  if(S.cal){ const mx=[...S.cal.keys()].sort().pop(); if(mx) $('quanDia').max=mx.replace(/(\d{4})(\d\d)(\d\d)/,'$1-$2-$3'); }
-  $('quanHora').value = S.quan ? secHHMM(S.quan.sec) : '';
+  const q=S.quan, dt=$('quanDT');
+  $('qsel').classList.toggle('on', !!q);
+  $('qAra').style.display = q ? '' : 'none';
+  if(q){ const d=dataDia(q.dia); $('qselTxt').textContent=nomDia(d).replace(/^./,c=>c.toUpperCase())+' · '+secHHMM(q.sec); $('qselSub').textContent='Segons horari · toca per canviar'; dt.value=isoD(d)+'T'+secHHMM(q.sec); }
+  else { $('qselTxt').textContent='Ara'; $('qselSub').textContent='Temps real · toca per triar dia i hora'; dt.value=isoD(dataDia(0))+'T'+secHHMM(ara5()); }
+  dt.min=isoD(dataDia(0))+'T00:00';
+  if(S.cal){ const mx=[...S.cal.keys()].sort().pop(); if(mx) dt.max=isoD(mx)+'T23:55'; }
 }
-$('quan').addEventListener('click',e=>{
-  const b=e.target.closest('button[data-q]'); if(!b) return;
-  if(b.dataset.q==='ara') S.quan=null;
-  else S.quan={dia:+b.dataset.q, sec:S.quan?S.quan.sec:(b.dataset.q==='0'?ara5():8*3600)};
-  marcarQuan(); if(S.mode==='favs') pintarFavs(); else pintarEstacion();
+const repintarQuan = () => { marcarQuan(); if(S.mode==='favs') pintarFavs(); else pintarEstacion(); };
+$('qAra').addEventListener('click',()=>{ S.quan=null; repintarQuan(); });
+$('quanDT').addEventListener('change',()=>{
+  const v=$('quanDT').value; if(!v) return;
+  const [d,t]=v.split('T'); const off=offDe(d.replace(/-/g,'')); if(off<0) return;
+  const [hh,mm]=(t||'08:00').split(':').map(Number);
+  S.quan={dia:off, sec:hh*3600+mm*60}; repintarQuan();
 });
-$('quanDia').addEventListener('change',()=>{
-  const v=$('quanDia').value; if(!v) return;
-  const off=offDe(v.replace(/-/g,'')); if(off<0) return;
-  S.quan={dia:off, sec:S.quan?S.quan.sec:8*3600};
-  marcarQuan(); if(S.mode==='favs') pintarFavs(); else pintarEstacion();
-});
-$('qdiaLab').addEventListener('click',()=>{ const i=$('quanDia'); try{ i.showPicker&&i.showPicker(); }catch(e){} });
-$('quanHora').addEventListener('change',()=>{
-  const v=$('quanHora').value; if(!v) return;
-  const [hh,mm]=v.split(':').map(Number);
-  S.quan={dia:S.quan?S.quan.dia:0, sec:hh*3600+mm*60};
-  marcarQuan(); if(S.mode==='favs') pintarFavs(); else pintarEstacion();
-});
+$('qsel').addEventListener('click',()=>{ const i=$('quanDT'); try{ i.showPicker&&i.showPicker(); }catch(e){} });
+marcarQuan();
 (()=>{const c=$('chips');const f=()=>c.classList.toggle('fi',c.scrollLeft+c.clientWidth>=c.scrollWidth-4);c.addEventListener('scroll',f,{passive:true});['touchstart','touchmove','pointerdown','pointermove','mousedown','wheel'].forEach(t=>c.addEventListener(t,e=>e.stopPropagation(),{passive:true}));new ResizeObserver(f).observe(c);new MutationObserver(f).observe(c,{childList:true});})();
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
