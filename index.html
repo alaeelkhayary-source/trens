@@ -369,6 +369,11 @@ html.dark .tlab,html.dark .mode.on,html.dark .search:focus,html.dark .bell,html.
 html.dark .qsel,html.dark .donbtn,html.dark .dontoast,html.dark .favbtn,html.dark .andanes span,html.dark .avbox .avcust input{background:var(--panel);color:var(--text)}
 html.dark .tlab.sel,html.dark .tab.on,html.dark .avbox .avopts button.on,html.dark .avbox .avact .ok,html.dark #qAra,html.dark .instbox button,html.dark .dontoast .dgo,html.dark .avmsg{background:var(--text);color:#111}
 html.dark .avbox .avact .del{color:var(--bad)}
+html.dark .leaflet-popup-content-wrapper,html.dark .leaflet-popup-tip{background:var(--panel);color:var(--text);box-shadow:0 12px 32px rgba(0,0,0,.6)}
+html.dark .leaflet-popup-close-button{color:var(--muted)!important}
+html.dark .leaflet-tooltip{background:var(--panel);color:var(--text);border-color:var(--line)}
+html.dark .leaflet-tooltip-top:before{border-top-color:var(--panel)}
+html.dark .leaflet-tooltip-bottom:before{border-bottom-color:var(--panel)}
 html.dark .tabbar{background:rgba(26,29,34,.96)}
 html.dark .stl{color:#d5dbe1;text-shadow:0 0 2px #000,0 0 4px #000,0 0 6px #000}
 
@@ -435,7 +440,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 13</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 14</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1180,8 +1185,9 @@ async function mostrarPopupEst(code, fixar){
   const s=S.stops[code]; if(!s) return;
   popCode=code;
   const c=cacheSal[code]; const fresc=c && Date.now()-c.t<20000;
-  if(!popEst) popEst=L.popup({className:'estpop', closeButton:false, autoPan:false, offset:[0,-8], maxWidth:300, minWidth:250});
+  if(!popEst) popEst=L.popup({className:'estpop', closeButton:false, autoPan:false, offset:[0,-8], maxWidth:300, minWidth:250, autoPanPaddingTopLeft:[12,140], autoPanPaddingBottomRight:[12,24]});
   popEst.options.autoPan=!HOVER || !!fixar;
+  { const mob=window.innerWidth<=900; popEst.options.autoPanPaddingBottomRight=[12, mob?110:24]; if(!mob) popEst.options.autoPanPaddingBottomRight=[440,24]; }
   popEst.setLatLng([s.lat,s.lon]).setContent(htmlPopupEst(code, c?c.s:null));
   if(!map.hasLayer(popEst)){
     popEst.openOn(map);
@@ -1194,7 +1200,7 @@ async function mostrarPopupEst(code, fixar){
   if(fresc) return;
   const sal=await salidasEstacion(code);
   cacheSal[code]={t:Date.now(), s:sal};
-  if(popCode===code && map.hasLayer(popEst)) popEst.setContent(htmlPopupEst(code, sal));
+  if(popCode===code && map.hasLayer(popEst)){ popEst.setContent(htmlPopupEst(code, sal)); if(popEst.options.autoPan && fixar) try{ popEst._adjustPan(); }catch(e){} }
 }
 function amagarPopupEst(code){
   popTimer=setTimeout(()=>{ if(popCode===code){ map.closePopup(popEst); popCode=null; } }, 350);
