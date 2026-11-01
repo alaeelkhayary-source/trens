@@ -293,19 +293,14 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .donbtn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font:500 13px var(--sans);cursor:pointer;text-decoration:none;white-space:nowrap}
 .donbtn:hover{background:var(--card)}
 .foot .donbtn{margin:2px 0 10px}
-.donmodal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(16,24,40,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-.donmodal.show{display:flex;animation:donin .25s ease-out}
-@keyframes donin{from{opacity:0}to{opacity:1}}
-.donbox{position:relative;width:100%;max-width:380px;background:#fff;border-radius:22px;padding:28px 24px 20px;text-align:center;box-shadow:0 20px 60px rgba(16,24,40,.3);animation:donup .3s cubic-bezier(.2,.8,.2,1)}
-@keyframes donup{from{transform:translateY(16px) scale(.97)}to{transform:none}}
-.donbox .dx{position:absolute;right:12px;top:12px;width:34px;height:34px;border:none;border-radius:50%;background:var(--card);color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
-.donbox .dico{font-size:34px;line-height:1;margin-bottom:12px;opacity:.9}
-.donbox h3{margin:0 0 8px;font-size:20px;font-weight:600}
-.donbox p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.5}
-.donbox .dgo{display:block;width:100%;padding:13px;border-radius:14px;background:var(--text);color:#fff;font:600 15px var(--sans);text-decoration:none;border:none;cursor:pointer}
-.donbox .dno{display:block;width:100%;margin-top:8px;padding:11px;border:none;background:none;color:var(--muted);font:500 14px var(--sans);cursor:pointer;border-radius:12px}
-.donbox .dno:hover{background:var(--card)}
-.donbox .dsig{margin-top:6px;font-size:12px;color:var(--dim)}
+.dontoast{position:fixed;z-index:900;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:12px;
+  max-width:min(460px,calc(100% - 24px));padding:10px 10px 10px 16px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 10px 30px rgba(16,24,40,.16);transition:opacity .3s,transform .3s}
+.dontoast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.dontoast .dtxt{display:flex;flex-direction:column;font-size:13px;line-height:1.35;color:var(--muted)}
+.dontoast .dtxt b{color:var(--text);font-weight:600}
+.dontoast .dgo{flex:none;padding:8px 14px;border-radius:999px;background:var(--text);color:#fff;font:600 13px var(--sans);text-decoration:none}
+.dontoast .dx{flex:none;width:30px;height:30px;border:none;border-radius:50%;background:var(--card);color:var(--muted);font-size:17px;cursor:pointer;line-height:1}
+@media (max-width:900px){ .dontoast{left:10px;right:10px;max-width:none;transform:translateY(20px);bottom:calc(var(--tbh) + var(--tbb) + 10px)} .dontoast.show{transform:none} .dontoast .dtxt{flex:1} }
 @media (max-width:900px){ .hcard .donbtn span{display:none} .hcard .donbtn{padding:6px 9px} }
 </style>
 </head>
@@ -1425,16 +1420,17 @@ const DONACIONS_URL = 'https://ko-fi.com/alaeelkhayary';
 function iniciarDonacions(){
   if(!DONACIONS_URL) return;
   ['donHead','donFoot','donGo'].forEach(id=>{ const a=$(id); if(a){ a.href=DONACIONS_URL; a.style.display=''; } });
-  const m=$('donModal');
-  const tancar=()=>m.classList.remove('show');
-  $('donX').onclick=tancar; $('donNo').onclick=tancar;
-  m.addEventListener('click',e=>{ if(e.target===m) tancar(); });
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') tancar(); });
-  // qui ja ha fet clic per donar no el torna a veure en 30 dies
-  $('donGo').addEventListener('click',()=>{ try{ localStorage.setItem('tev-don', Date.now()); }catch(e){} tancar(); });
+  const t=$('donModal');
+  const vist=()=>{ try{ localStorage.setItem('tev-don', Date.now()); }catch(e){} };
+  const tancar=()=>{ t.classList.remove('show'); vist(); };
+  $('donX').onclick=tancar;
+  $('donGo').addEventListener('click',tancar);
+  // un avís petit, que no bloqueja: surt als 30 s d'ús i com a màxim un cop cada 7 dies
   let ja=0; try{ ja=+localStorage.getItem('tev-don')||0; }catch(e){}
-  if(Date.now()-ja > 30*864e5) m.classList.add('show');
+  if(Date.now()-ja < 7*864e5) return;
+  setTimeout(()=>{ t.classList.add('show'); vist(); setTimeout(()=>t.classList.remove('show'), 20000); }, DON_ESPERA);
 }
+const DON_ESPERA = 30000;
 
 /* ===== Trens futurs: triar una hora (avui o demà) a la pestanya Estació ===== */
 S.quan=null;   // null = ara; si no {dia:0|1, sec}
@@ -1557,16 +1553,11 @@ async function ciclo(){
   $('instModal').addEventListener('click',e=>{ if(e.target.id==='instModal') $('instModal').classList.remove('show'); });
 })();
 </script>
-<div class="donmodal" id="donModal" role="dialog" aria-modal="true" aria-labelledby="donTitol">
-  <div class="donbox">
-    <button class="dx" id="donX" aria-label="Tancar">×</button>
-    <div class="dico">☕</div>
-    <h3 id="donTitol">T'agrada Trens en viu?</h3>
-    <p>És gratis, sense anuncis i la faig jo sol. Si t'és útil, pots ajudar-me a mantenir-la amb una petita donació.</p>
-    <a class="dgo" id="donGo" href="#" target="_blank" rel="noopener">Convida'm a un cafè</a>
-    <button class="dno" id="donNo">Ara no, vull veure els trens</button>
-    <div class="dsig">Gràcies! · Alae</div>
-  </div>
+<div class="dontoast" id="donModal" role="status" aria-live="polite">
+  <div class="dtxt"><b>☕ T'agrada Trens en viu?</b><span>Si t'és útil, pots convidar-me a un cafè.</span></div>
+  <a class="dgo" id="donGo" href="#" target="_blank" rel="noopener">Donar</a>
+  <button class="dx" id="donX" aria-label="Tancar">×</button>
+</div>
 </div>
 </body>
 </html>
