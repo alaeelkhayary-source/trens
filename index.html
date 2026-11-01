@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
+<script>(function(){try{var t=localStorage.getItem('tev-tema');var d=t?t==='fosc':matchMedia('(prefers-color-scheme: dark)').matches;if(d){document.documentElement.classList.add('dark');document.querySelector('meta[name=theme-color]').content='#15181c';}}catch(e){}})();</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -349,6 +350,34 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .dontoast .dx{flex:none;width:30px;height:30px;border:none;border-radius:50%;background:var(--card);color:var(--muted);font-size:17px;cursor:pointer;line-height:1}
 @media (max-width:900px){ .dontoast{left:10px;right:10px;max-width:none;transform:translateY(20px);bottom:calc(var(--tbh) + var(--tbb) + 10px)} .dontoast.show{transform:none} .dontoast .dtxt{flex:1} }
 @media (max-width:900px){ .hcard .donbtn span{display:none} .hcard .donbtn{padding:6px 9px} }
+
+/* ===== Mode fosc ===== */
+html.dark{color-scheme:dark;
+  --bg:#0f1114; --panel:#1a1d22; --card:#23272e; --line:#2e333b; --track:#3a404a;
+  --text:#eef1f4; --muted:#9aa3ad; --dim:#6b7480;
+  --ok:#35c27a; --warn:#f0a630; --bad:#ff6369;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.45)}
+html.dark body{background:var(--bg)}
+html.dark .leaflet-container,html.dark #map{background:#1b1e23}
+html.dark .leaflet-control-attribution{background:rgba(26,29,34,.85)!important}
+html.dark .leaflet-control-attribution a{color:var(--muted)}
+html.dark .chip.off{background:rgba(26,29,34,.6)}
+html.dark .tlab,html.dark .mode.on,html.dark .search:focus,html.dark .bell,html.dark .avbox,html.dark .avbox .avopts button,html.dark .avbox .avact button,
+html.dark .qsel,html.dark .donbtn,html.dark .dontoast,html.dark .favbtn,html.dark .andanes span,html.dark .avbox .avcust input{background:var(--panel);color:var(--text)}
+html.dark .tlab.sel,html.dark .tab.on,html.dark .avbox .avopts button.on,html.dark .avbox .avact .ok,html.dark #qAra,html.dark .instbox button,html.dark .dontoast .dgo,html.dark .avmsg{background:var(--text);color:#111}
+html.dark .avbox .avact .del{color:var(--bad)}
+html.dark .tabbar{background:rgba(26,29,34,.96)}
+html.dark .stl{color:#d5dbe1;text-shadow:0 0 2px #000,0 0 4px #000,0 0 6px #000}
+
+html.dark .accbox.part,html.dark .epa.part{background:#3a2d12;color:#f2c06b}
+html.dark .accbox.part b{color:#f2c06b}
+html.dark .epa.ok{background:#173526;color:#7ddca6}
+html.dark .epa.no{background:#3d1a1b;color:#ff9a9e}
+html.dark .favbtn.on,html.dark .stops li.here,html.dark .bell.on{background:#3a2f12;border-color:#a57d1d;color:#ffd666}
+html.dark .avsheet{background:rgba(0,0,0,.5)}
+html.dark .loading{background:var(--bg);color:var(--text)}
+html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
+.temabtn{flex:none;width:32px;height:32px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
 </style>
 </head>
 <body>
@@ -361,6 +390,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
         <h1>Trens en viu</h1>
         <div class="live"><span class="dot load" id="dot"></span><span class="clock" id="clock"></span><span id="liveTxt">Connectant…</span><span id="ago"></span></div>
         <button class="instbtn" id="instBtn" aria-label="Instal·lar com a app"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Instal·lar app</span></button>
+        <button class="temabtn" id="temaBtn" aria-label="Mode fosc" title="Mode fosc">🌙</button>
         <a class="donbtn" id="donHead" href="#" target="_blank" rel="noopener" style="display:none" aria-label="Fer una donació">☕<span> Donar</span></a>
         <div class="hstats"><span><b id="sTotal">–</b> trens</span><span><b id="sLate">–</b> amb retard</span><span>mitjana <b id="sMed">–</b></span></div>
       </div>
@@ -402,7 +432,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 10</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 11</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -555,13 +585,15 @@ function parseAlerts(buf){
 }
 
 /* ================= MAPA ================= */
+const esFosc=()=>document.documentElement.classList.contains('dark');
+const estilMapa=()=>'https://tiles.openfreemap.org/styles/'+(esFosc()?'dark':'liberty');
 const map = L.map('map',{zoomControl:false, attributionControl:false, preferCanvas:false}).setView([41.47,2.03],11);
 L.control.attribution({position:'bottomleft',prefix:false}).addTo(map);
 // Mapa realista (OpenFreeMap, gratis y sin clave). Si no carga, mapa de OpenStreetMap.
 const ATRIB='<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> · © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 try{
   if(!L.maplibreGL || !window.maplibregl) throw new Error('sin MapLibre');
-  L.maplibreGL({style:'https://tiles.openfreemap.org/styles/liberty', attribution:ATRIB}).addTo(map);
+  S.gl=L.maplibreGL({style:estilMapa(), attribution:ATRIB}).addTo(map);
 }catch(e){
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
 }
@@ -823,8 +855,8 @@ async function cargarLineas(){
       const id=x.route_short_name||x.route_id;
       if(x.route_color && x.route_color!=='000000') COL[id]='#'+x.route_color;
       const g=x.shape?.geometry||x.shape; if(!g||!g.type || AMAGADES.has(id)) return;
-      L.geoJSON(g,{style:{color:'#ffffff',weight:7,opacity:.95,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(capaLineas);
-      const lyr=L.geoJSON(g,{style:{color:COL[id]||'#8a96a3',weight:3.5,opacity:.9,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(capaLineas);
+      L.geoJSON(g,{className:'linfons',style:{color:esFosc()?'#0f1114':'#ffffff',weight:7,opacity:.95,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(capaLineas);
+      const lyr=L.geoJSON(g,{className:'linia',style:{color:COL[id]||'#8a96a3',weight:3.5,opacity:.9,lineCap:'round',lineJoin:'round'},interactive:false}).addTo(capaLineas);
       if(ORDEN.includes(id)) bounds.push(lyr.getBounds());
     });
     if(bounds.length){ limites=bounds.reduce((a,b)=>a.extend(b), L.latLngBounds(bounds[0].getSouthWest(),bounds[0].getNorthEast())); }
@@ -838,7 +870,7 @@ function pintarEstaciones(){
     const s=S.stops[p]; if(!isFinite(s.lat)) return;
     const acc=s.wc===1?' ♿':'';
     const fav=esFav(p);
-    const m=L.circleMarker([s.lat,s.lon],{radius:z>=13?5.5:4.5,color:fav?'#b37a00':'#3c4650',weight:2,fillColor:fav?'#ffc83d':'#ffffff',fillOpacity:1,bubblingMouseEvents:false});
+    const m=L.circleMarker([s.lat,s.lon],{radius:z>=13?5.5:4.5,color:fav?'#b37a00':(esFosc()?'#c9d1d9':'#3c4650'),weight:2,fillColor:fav?'#ffc83d':(esFosc()?'#1a1d22':'#ffffff'),fillOpacity:1,bubblingMouseEvents:false});
     if(z>=13 || fav) m.bindTooltip((fav?'★ ':'')+s.name+acc,{permanent:true,direction:'right',offset:[8,0],className:'stl'});
     if(HOVER){
       m.on('mouseover',()=>{ m.setStyle({radius:8,weight:3,color:'#14171a'}); mostrarPopupEst(p); });
@@ -1657,6 +1689,20 @@ async function comprovarAvisos(){
 }
 setInterval(comprovarAvisos, 15000);
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) comprovarAvisos(); });
+
+/* ===== Mode fosc: botó ===== */
+function aplicarTema(fosc, desar){
+  document.documentElement.classList.toggle('dark', fosc);
+  document.querySelector('meta[name=theme-color]').content = fosc?'#15181c':'#ffffff';
+  $('temaBtn').textContent = fosc?'☀️':'🌙'; $('temaBtn').title = $('temaBtn').ariaLabel = fosc?'Mode clar':'Mode fosc';
+  if(desar){ try{ localStorage.setItem('tev-tema', fosc?'fosc':'clar'); }catch(e){} }
+  try{ S.gl?.getMaplibreMap()?.setStyle(estilMapa()); }catch(e){}
+  capaLineas.eachLayer(g=>g.eachLayer?.(l=>{ if(l.options.className==='linfons') l.setStyle({color:fosc?'#0f1114':'#ffffff'}); }));
+  try{ pintarEstaciones(); }catch(e){}
+}
+$('temaBtn').onclick=()=>aplicarTema(!esFosc(), true);
+aplicarTema(esFosc(), false);
+try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',e=>{ if(!localStorage.getItem('tev-tema')) aplicarTema(e.matches,false); }); }catch(e){}
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(){
