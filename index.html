@@ -281,8 +281,8 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .top{pointer-events:none}
 .top .hcard,.top .chip{pointer-events:auto}
 /* Donacions */
-.donbtn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:none;background:#ffdd57;color:#3b2a00;font:600 13px var(--sans);cursor:pointer;text-decoration:none;white-space:nowrap}
-.donbtn:hover{filter:brightness(.96)}
+.donbtn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font:500 13px var(--sans);cursor:pointer;text-decoration:none;white-space:nowrap}
+.donbtn:hover{background:var(--card)}
 .foot .donbtn{margin:2px 0 10px}
 .donmodal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(16,24,40,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
 .donmodal.show{display:flex;animation:donin .25s ease-out}
@@ -290,10 +290,10 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .donbox{position:relative;width:100%;max-width:380px;background:#fff;border-radius:22px;padding:28px 24px 20px;text-align:center;box-shadow:0 20px 60px rgba(16,24,40,.3);animation:donup .3s cubic-bezier(.2,.8,.2,1)}
 @keyframes donup{from{transform:translateY(16px) scale(.97)}to{transform:none}}
 .donbox .dx{position:absolute;right:12px;top:12px;width:34px;height:34px;border:none;border-radius:50%;background:var(--card);color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
-.donbox .dico{font-size:44px;line-height:1;margin-bottom:10px}
+.donbox .dico{font-size:34px;line-height:1;margin-bottom:12px;opacity:.9}
 .donbox h3{margin:0 0 8px;font-size:20px;font-weight:600}
 .donbox p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.5}
-.donbox .dgo{display:block;width:100%;padding:13px;border-radius:14px;background:#ffdd57;color:#3b2a00;font:600 15px var(--sans);text-decoration:none;border:none;cursor:pointer}
+.donbox .dgo{display:block;width:100%;padding:13px;border-radius:14px;background:var(--text);color:#fff;font:600 15px var(--sans);text-decoration:none;border:none;cursor:pointer}
 .donbox .dno{display:block;width:100%;margin-top:8px;padding:11px;border:none;background:none;color:var(--muted);font:500 14px var(--sans);cursor:pointer;border-radius:12px}
 .donbox .dno:hover{background:var(--card)}
 .donbox .dsig{margin-top:6px;font-size:12px;color:var(--dim)}
@@ -1483,7 +1483,7 @@ async function ciclo(){
     <div class="dico">☕</div>
     <h3 id="donTitol">T'agrada Trens en viu?</h3>
     <p>És gratis, sense anuncis i la faig jo sol. Si t'és útil, pots ajudar-me a mantenir-la amb una petita donació.</p>
-    <a class="dgo" id="donGo" href="#" target="_blank" rel="noopener">☕ Convida'm a un cafè</a>
+    <a class="dgo" id="donGo" href="#" target="_blank" rel="noopener">Convida'm a un cafè</a>
     <button class="dno" id="donNo">Ara no, vull veure els trens</button>
     <div class="dsig">Gràcies! · Alae</div>
   </div>
