@@ -277,6 +277,27 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 }
 .sheettitle{display:none}
 @media (max-width:900px){ .sheettitle{display:block} }
+/* La capçalera no bloqueja el mapa: només els seus botons són clicables */
+.top{pointer-events:none}
+.top .hcard,.top .chip{pointer-events:auto}
+/* Donacions */
+.donbtn{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:none;background:#ffdd57;color:#3b2a00;font:600 13px var(--sans);cursor:pointer;text-decoration:none;white-space:nowrap}
+.donbtn:hover{filter:brightness(.96)}
+.foot .donbtn{margin:2px 0 10px}
+.donmodal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(16,24,40,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.donmodal.show{display:flex;animation:donin .25s ease-out}
+@keyframes donin{from{opacity:0}to{opacity:1}}
+.donbox{position:relative;width:100%;max-width:380px;background:#fff;border-radius:22px;padding:28px 24px 20px;text-align:center;box-shadow:0 20px 60px rgba(16,24,40,.3);animation:donup .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes donup{from{transform:translateY(16px) scale(.97)}to{transform:none}}
+.donbox .dx{position:absolute;right:12px;top:12px;width:34px;height:34px;border:none;border-radius:50%;background:var(--card);color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+.donbox .dico{font-size:44px;line-height:1;margin-bottom:10px}
+.donbox h3{margin:0 0 8px;font-size:20px;font-weight:600}
+.donbox p{margin:0 0 18px;color:var(--muted);font-size:14px;line-height:1.5}
+.donbox .dgo{display:block;width:100%;padding:13px;border-radius:14px;background:#ffdd57;color:#3b2a00;font:600 15px var(--sans);text-decoration:none;border:none;cursor:pointer}
+.donbox .dno{display:block;width:100%;margin-top:8px;padding:11px;border:none;background:none;color:var(--muted);font:500 14px var(--sans);cursor:pointer;border-radius:12px}
+.donbox .dno:hover{background:var(--card)}
+.donbox .dsig{margin-top:6px;font-size:12px;color:var(--dim)}
+@media (max-width:900px){ .hcard .donbtn span{display:none} .hcard .donbtn{padding:6px 9px} }
 </style>
 </head>
 <body>
@@ -289,6 +310,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
         <h1>Trens en viu</h1>
         <div class="live"><span class="dot load" id="dot"></span><span class="clock" id="clock"></span><span id="liveTxt">Connectant…</span><span id="ago"></span></div>
         <button class="instbtn" id="instBtn" aria-label="Instal·lar com a app"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Instal·lar app</span></button>
+        <a class="donbtn" id="donHead" href="#" target="_blank" rel="noopener" style="display:none" aria-label="Fer una donació">☕<span> Donar</span></a>
         <div class="hstats"><span><b id="sTotal">–</b> trens</span><span><b id="sLate">–</b> amb retard</span><span>mitjana <b id="sMed">–</b></span></div>
       </div>
       <div class="chips" id="chips"></div>
@@ -324,6 +346,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
     <div class="list" id="list"></div>
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
+      <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
       <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 3</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
@@ -1374,6 +1397,23 @@ function actualitzarBadge(){
   const n=visibles().filter(t=>{const d=retrasoTren(t); return d!=null&&d>=3;}).length;
   const el=$('badgeLate'); if(!el) return; el.style.display=n?'block':'none'; el.textContent=n;
 }
+
+/* ===== Donacions ===== */
+// Enllaç de donacions (Ko-fi, PayPal.me…). Si està buit, no es mostra res.
+const DONACIONS_URL = '';
+function iniciarDonacions(){
+  if(!DONACIONS_URL) return;
+  ['donHead','donFoot','donGo'].forEach(id=>{ const a=$(id); if(a){ a.href=DONACIONS_URL; a.style.display=''; } });
+  const m=$('donModal');
+  const tancar=()=>m.classList.remove('show');
+  $('donX').onclick=tancar; $('donNo').onclick=tancar;
+  m.addEventListener('click',e=>{ if(e.target===m) tancar(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') tancar(); });
+  // qui ja ha fet clic per donar no el torna a veure en 30 dies
+  $('donGo').addEventListener('click',()=>{ try{ localStorage.setItem('tev-don', Date.now()); }catch(e){} tancar(); });
+  let ja=0; try{ ja=+localStorage.getItem('tev-don')||0; }catch(e){}
+  if(Date.now()-ja > 30*864e5) m.classList.add('show');
+}
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(){
@@ -1402,6 +1442,7 @@ async function ciclo(){
     return;
   }
   $('loading').classList.add('hide');
+  iniciarDonacions();
   cargarAvisos();
   try{ const e=localStorage.getItem('tev-est'); if(e && S.stops[e]){ S.station=e; $('search').value=S.stops[e].name; } }catch(e){}
   S.favs=S.favs.filter(c=>S.stops[c]);
@@ -1436,5 +1477,16 @@ async function ciclo(){
   $('instModal').addEventListener('click',e=>{ if(e.target.id==='instModal') $('instModal').classList.remove('show'); });
 })();
 </script>
+<div class="donmodal" id="donModal" role="dialog" aria-modal="true" aria-labelledby="donTitol">
+  <div class="donbox">
+    <button class="dx" id="donX" aria-label="Tancar">×</button>
+    <div class="dico">☕</div>
+    <h3 id="donTitol">T'agrada Trens en viu?</h3>
+    <p>És gratis, sense anuncis i la faig jo sol. Si t'és útil, pots ajudar-me a mantenir-la amb una petita donació.</p>
+    <a class="dgo" id="donGo" href="#" target="_blank" rel="noopener">☕ Convida'm a un cafè</a>
+    <button class="dno" id="donNo">Ara no, vull veure els trens</button>
+    <div class="dsig">Gràcies! · Alae</div>
+  </div>
+</div>
 </body>
 </html>
