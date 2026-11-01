@@ -299,7 +299,8 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .top{pointer-events:none}
 .top .hcard,.top .chip{pointer-events:auto}
 /* Selector d'hora (trens futurs) */
-.quan{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.quan{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:14px;background:#fafafa}
+.quan .qlab{font:600 13px var(--sans);color:var(--text);margin-right:2px}
 .quan button{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);font:500 13px var(--sans);cursor:pointer}
 .quan button.on{background:var(--text);border-color:var(--text);color:#fff}
 .quan input{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font:500 13px var(--sans);min-width:96px}
@@ -360,20 +361,21 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
       <div id="hdrSt" style="display:none">
         <input class="search" id="search" list="stList" placeholder="Busca la teva estació" autocomplete="off">
         <datalist id="stList"></datalist>
-        <div class="quan" id="quan">
-          <button data-q="ara" class="on">Ara</button>
-          <button data-q="0">Avui</button>
-          <button data-q="1">Demà</button>
-          <input type="time" id="quanHora" step="300" aria-label="Hora">
-        </div>
         <div class="desc" id="stDesc"></div>
+      </div>
+      <div class="quan" id="quan" style="display:none">
+        <span class="qlab">🕒 Quan?</span>
+        <button data-q="ara" class="on">Ara</button>
+        <button data-q="0">Avui</button>
+        <button data-q="1">Demà</button>
+        <input type="time" id="quanHora" step="300" aria-label="Tria l'hora">
       </div>
     </header>
     <div class="list" id="list"></div>
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 3</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 4</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1150,9 +1152,22 @@ async function pintarFavs(){
     L_.innerHTML=`<div class="empty favempty"><div style="font-size:30px">☆</div><b>Encara no tens estacions preferides</b><br>Toca una estació al mapa (o passa-hi el cursor) i prem <b>☆ Afegir a preferides</b>. També ho pots fer des de la pestanya Estació.<br><br>Es guarden en aquest dispositiu.</div>`;
     return;
   }
-  $('favDesc').textContent=`${S.favs.length} ${S.favs.length===1?'estació':'estacions'} · propers trens en temps real`;
+  const q=S.quan;
+  $('favDesc').innerHTML = q ? `${S.favs.length} ${S.favs.length===1?'estació':'estacions'} · <b>${esc(nomDia(dataDia(q.dia)).toLowerCase())} a partir de les ${secHHMM(q.sec)}</b>` : `${S.favs.length} ${S.favs.length===1?'estació':'estacions'} · propers trens en temps real`;
   const ahora=Date.now();
+  if(q && (!S.horarios||!S.cal)){ L_.innerHTML='<div class="empty">Carregant horaris…</div>'; return; }
   const blocs=await Promise.all(S.favs.map(async code=>{
+    if(q){
+      const sort=sortidesProgramades(code, dataDia(q.dia), q.sec, 4);
+      await completarViajes(sort.map(s=>s.tid));
+      const acc=accesibilidad(code), lin=lineasEstacion(code);
+      return `<div class="favcard">
+      <div class="fh"><button class="fname" data-go="${esc(code)}">${esc(nom(code))}</button>
+        <button class="favstar" data-fav="${esc(code)}" aria-label="Treure de preferides" title="Treure de preferides">★</button></div>
+      <div class="fmeta">${lin.map(l=>`<span class="lin" style="background:${colorOf(l)}">${esc(l)}</span>`).join('')}<span class="faacc ${acc.cls}">${acc.icon} ${esc(acc.txt)}</span></div>
+      <div class="slist">${sort.map(htmlFutur).join('')||'<div class="pv">No hi ha trens a partir d\'aquesta hora.</div>'}</div>
+    </div>`;
+    }
     const sal=await salidasEstacion(code).catch(()=>[]);
     const acc=accesibilidad(code), lin=lineasEstacion(code);
     return `<div class="favcard">
@@ -1162,7 +1177,7 @@ async function pintarFavs(){
       <div class="slist">${sal.slice(0,3).map(s=>htmlSalida(s,ahora)).join('')||'<div class="pv">Avui ja no queden més trens.</div>'}</div>
     </div>`;
   }));
-  if(S.mode!=='favs') return;
+  if(S.mode!=='favs' || S.quan!==q) return;
   L_.innerHTML=blocs.join('');
 }
 // clics a estrelles (bombolla, panell) i noms d'estació
@@ -1377,6 +1392,7 @@ function mostrarPestanya(){
   document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on',x.dataset.mode===S.mode));
   $('hdrLate').style.display=S.mode==='late'?'block':'none'; $('hdrSt').style.display=S.mode==='station'?'block':'none';
   $('hdrFav').style.display=S.mode==='favs'?'block':'none';
+  $('quan').style.display=(S.mode==='favs'||S.mode==='station')?'flex':'none';
   $('list').style.display=S.mode==='avisos'?'none':'block'; $('incid').style.display=S.mode==='avisos'?'block':'none';
 }
 $('search').addEventListener('change',()=>{
@@ -1474,6 +1490,14 @@ function sortidesProgramades(code, data, secDes, n){
   out.sort((a,b)=>a.prog-b.prog);
   return out.slice(0,n);
 }
+function htmlFutur(s){
+  const info=S.trips.get(s.tid)||{}; const a=S.sched.get(s.tid); const dest=info.headsign||nom(a[a.length-1].stop);
+  const lin=info.route||'?';
+  return `<div class="item" data-id="${esc(s.tid)}" data-date="${s.data}">
+      <div class="big hora">${hm(s.prog)}</div>
+      <div><div class="t"><span class="lin" style="background:${colorOf(lin)}">${esc(lin)}</span> ${esc(dest)}</div>
+      <div class="m">${esc(nomDia(s.data))} · segons horari</div></div><div></div></div>`;
+}
 async function pintarFutur(code, acc){
   const L_=$('list'), q=S.quan, data=dataDia(q.dia);
   $('stDesc').innerHTML=`Trens des de ${esc(nom(code))} · <b>${esc(nomDia(data).toLowerCase())} a partir de les ${secHHMM(q.sec)}</b><span class="accline ${acc.cls}">${acc.icon} ${esc(acc.txt)}</span>${botoFav(code)}`;
@@ -1481,14 +1505,7 @@ async function pintarFutur(code, acc){
   const sort=sortidesProgramades(code, data, q.sec, 25);
   await completarViajes(sort.map(s=>s.tid));
   if(S.station!==code || S.mode!=='station' || S.quan!==q) return;
-  L_.innerHTML = sort.map(s=>{
-    const info=S.trips.get(s.tid)||{}; const a=S.sched.get(s.tid); const dest=info.headsign||nom(a[a.length-1].stop);
-    const lin=info.route||'?';
-    return `<div class="item" data-id="${esc(s.tid)}" data-date="${s.data}">
-      <div class="big hora">${hm(s.prog)}</div>
-      <div><div class="t"><span class="lin" style="background:${colorOf(lin)}">${esc(lin)}</span> ${esc(dest)}</div>
-      <div class="m">${esc(nomDia(s.data))} · segons horari</div></div><div></div></div>`;
-  }).join('') || `<div class="empty">No hi ha trens des d'aquesta estació a partir d'aquesta hora.</div>`;
+  L_.innerHTML = sort.map(htmlFutur).join('') || `<div class="empty">No hi ha trens des d'aquesta estació a partir d'aquesta hora.</div>`;
 }
 function marcarQuan(){
   document.querySelectorAll('#quan button').forEach(b=>b.classList.toggle('on', S.quan ? b.dataset.q===String(S.quan.dia) : b.dataset.q==='ara'));
@@ -1498,13 +1515,13 @@ $('quan').addEventListener('click',e=>{
   const b=e.target.closest('button[data-q]'); if(!b) return;
   if(b.dataset.q==='ara') S.quan=null;
   else S.quan={dia:+b.dataset.q, sec:S.quan?S.quan.sec:(b.dataset.q==='0'?ara5():8*3600)};
-  marcarQuan(); pintarEstacion();
+  marcarQuan(); if(S.mode==='favs') pintarFavs(); else pintarEstacion();
 });
 $('quanHora').addEventListener('change',()=>{
   const v=$('quanHora').value; if(!v) return;
   const [hh,mm]=v.split(':').map(Number);
   S.quan={dia:S.quan?S.quan.dia:0, sec:hh*3600+mm*60};
-  marcarQuan(); pintarEstacion();
+  marcarQuan(); if(S.mode==='favs') pintarFavs(); else pintarEstacion();
 });
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
@@ -1540,7 +1557,7 @@ async function ciclo(){
   S.favs=S.favs.filter(c=>S.stops[c]);
   if(S.favs.length){ S.mode='favs'; mostrarPestanya(); pintarFavs(); }
   if(esMobil()) tancarFull();
-  setInterval(()=>{ if(S.mode==='favs') pintarFavs(); }, 20000);
+  setInterval(()=>{ if(S.mode==='favs' && !S.quan) pintarFavs(); }, 20000);
   setInterval(ciclo, REFRESH);
   setInterval(cargarAvisos, 120000);
   setInterval(()=>{ if(S.mode==='station') pintarEstacion(); }, 30000);
