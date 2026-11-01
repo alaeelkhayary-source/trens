@@ -381,7 +381,7 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 6</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 7</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1544,7 +1544,7 @@ $('quanHora').addEventListener('change',()=>{
   S.quan={dia:S.quan?S.quan.dia:0, sec:hh*3600+mm*60};
   marcarQuan(); if(S.mode==='favs') pintarFavs(); else pintarEstacion();
 });
-(()=>{const c=$('chips');const f=()=>c.classList.toggle('fi',c.scrollLeft+c.clientWidth>=c.scrollWidth-4);c.addEventListener('scroll',f,{passive:true});new ResizeObserver(f).observe(c);new MutationObserver(f).observe(c,{childList:true});})();
+(()=>{const c=$('chips');const f=()=>c.classList.toggle('fi',c.scrollLeft+c.clientWidth>=c.scrollWidth-4);c.addEventListener('scroll',f,{passive:true});['touchstart','touchmove','pointerdown','pointermove','mousedown','wheel'].forEach(t=>c.addEventListener(t,e=>e.stopPropagation(),{passive:true}));new ResizeObserver(f).observe(c);new MutationObserver(f).observe(c,{childList:true});})();
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(){
