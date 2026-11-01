@@ -146,6 +146,11 @@ b,strong{font-weight:600}
 .mode{white-space:nowrap}
 .favbtn{display:inline-block;margin:6px 0 8px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font:500 12px var(--sans);cursor:pointer}
 .favbtn:hover{border-color:#ffc83d}
+.favgran{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 6px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--text);cursor:pointer;text-align:left}
+.favgran .fgn{font:700 18px var(--sans);letter-spacing:-.2px}
+.favgran .fgs{font-size:24px;line-height:1;color:var(--dim)}
+.favgran.on .fgs{color:#f5b301}
+.favgran:hover .fgs{color:#f5b301}
 .favbtn.on{background:#fff6dc;border-color:#ffc83d;color:#8a5d00}
 .favcard{padding:12px 6px 6px;border-bottom:1px solid var(--line)}
 .favcard .fh{display:flex;justify-content:space-between;align-items:center}
@@ -214,8 +219,8 @@ body.can-install .instbtn{display:flex}
 aside{position:absolute;z-index:550;top:20px;right:20px;bottom:20px;width:400px;background:var(--panel);border-radius:var(--r);box-shadow:var(--shadow);display:flex;flex-direction:column;min-height:0;overflow:hidden}
 aside header{padding:18px 20px 6px}
 aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
-.modes{display:flex;background:var(--card);border-radius:10px;padding:3px}
-.mode{flex:1;padding:8px 6px;background:none;border:none;border-radius:8px;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer}
+.modes{display:flex;background:var(--card);border-radius:13px;padding:4px}
+.mode{flex:1;padding:12px 8px;background:none;border:none;border-radius:10px;color:var(--muted);font-size:16px;font-weight:600;cursor:pointer}
 .mode.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(16,24,40,.1)}
 .tabs{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
 .tab{padding:5px 11px;background:none;border:1px solid var(--line);color:var(--muted);font-size:12px;cursor:pointer;border-radius:999px}
@@ -323,11 +328,11 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
   body.sheet .card{display:none}
   /* barra de tasques */
   /* Barra flotant a baix de tot (respecta la zona de l iPhone) */
-  :root{--tbh:60px; --tbb:calc(8px + env(safe-area-inset-bottom) * .6)}
+  :root{--tbh:68px; --tbb:calc(8px + env(safe-area-inset-bottom) * .6)}
   .tabbar{display:flex;position:fixed;left:10px;right:10px;bottom:var(--tbb);height:var(--tbh);z-index:800;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
     border:1px solid var(--line);border-radius:20px;padding:6px 4px;box-shadow:0 6px 24px rgba(16,24,40,.16)}
-  .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font:500 10.5px var(--sans);padding:4px 0;cursor:pointer;position:relative}
-  .tabbar svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+  .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:none;color:var(--muted);font:600 12.5px var(--sans);padding:4px 0;cursor:pointer;position:relative}
+  .tabbar svg{width:28px;height:28px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
   .tabbar button.on{color:var(--text)}
   .tabbar button.on::before{content:'';position:absolute;top:-6px;width:28px;height:3px;border-radius:2px;background:var(--text)}
   .tabbar .badge{position:absolute;top:0;left:calc(50% + 6px);min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;font:600 10px/16px var(--sans)}
@@ -424,9 +429,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
       <div class="sheettitle" id="sheettitle"></div>
       <div class="modes">
         <button class="mode" data-mode="favs">★ Preferides</button>
-        <button class="mode on" data-mode="late">Retards</button>
-        <button class="mode" data-mode="station">Trens</button>
-        <button class="mode" data-mode="avisos">Avisos</button>
+        <button class="mode on" data-mode="station">Trens</button>
       </div>
       <div id="hdrLate">
         <div class="desc" id="lateDesc">Carregant…</div>
@@ -451,7 +454,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 15</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 16</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -470,7 +473,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
   <div class="avact"><button id="avDel" class="del" style="display:none">Treure avís</button><button id="avNo">Cancel·lar</button><button id="avOk" class="ok">Activar avís</button></div>
   <div class="avnote" id="avNote">Rebràs l'avís mentre tinguis la web oberta (també en segon pla). A l'iPhone, cal tenir-la instal·lada a la pantalla d'inici.</div>
 </div></div><div class="avmsg" id="avMsg"></div>
-<nav class="tabbar" id="tabbar"><button data-tab="mapa" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Mapa</span></button><button data-tab="favs"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Preferides</span></button><button data-tab="late"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span>Retards</span><i class="badge" id="badgeLate" style="display:none"></i></button><button data-tab="station"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-3M15 21l2-3"/></svg><span>Trens</span></button><button data-tab="avisos"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></svg><span>Avisos</span></button></nav>
+<nav class="tabbar" id="tabbar"><button data-tab="mapa" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Mapa</span></button><button data-tab="favs"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Preferides</span></button><button data-tab="station"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-3M15 21l2-3"/></svg><span>Trens</span></button></nav>
 <script>
 /* ================= CONFIG ================= */
 const BASE = 'https://dadesobertes.fgc.cat/api/explore/v2.1/catalog/datasets';
@@ -497,12 +500,12 @@ const S = {
   trains:[],
   alerts:[],
   hidden:new Set((()=>{ try{ return JSON.parse(localStorage.getItem('tev-ocultes')||'[]'); }catch(e){ return []; } })()),   // línies amagades, guardades al dispositiu
-  net:'all', mode:'late', showAll:false,
+  net:'all', mode:'station', showAll:false,
   sel:null, follow:false,
   markers:{}, station:null, feedTime:null, hoy:{}, horarios:false,
   shapes:new Map(), motion:{}, posTime:null,
   log:{}, track:{}, prevState:{}, lastPosChange:null, busy:false, selEst:null, selRuta:null, svcHoy:new Set(), idxSal:null,
-  favs:(()=>{ try{ return JSON.parse(localStorage.getItem('tev-favs')||'[]'); }catch(e){ return []; } })()
+  favs:(()=>{ try{ const ls=localStorage.getItem('tev-favs'); if(ls) return JSON.parse(ls); const ck=document.cookie.match(/(?:^|; )tevfavs=([^;]*)/); return ck?JSON.parse(decodeURIComponent(ck[1])):[]; }catch(e){ return []; } })()
 };
 
 /* ================= UTILIDADES ================= */
@@ -1144,7 +1147,7 @@ async function pintarEstacion(){
   const code=S.station, ahora=Date.now();
   const acc=accesibilidad(code);
   if(S.quan){ await pintarFutur(code, acc); return; }
-  $('stDesc').innerHTML=`Properes sortides des de ${esc(nom(code))}<span class="accline ${acc.cls}">${acc.icon} ${esc(acc.txt)}</span>${botoFav(code)}`;
+  $('stDesc').innerHTML=`${botoFavGran(code)}<span class="accline ${acc.cls}">${acc.icon} ${esc(acc.txt)}</span>`;
   const salidas=await salidasEstacion(code);
   if(S.station!==code || S.mode!=='station') return;
   L_.innerHTML = salidas.slice(0,16).map(s=>htmlSalida(s,ahora)).join('') || '<div class="empty">Avui ja no queden més trens des d\'aquesta estació.</div>';
@@ -1225,10 +1228,16 @@ const esFav = code => S.favs.includes(code);
 function toggleFav(code){
   if(esFav(code)) S.favs=S.favs.filter(c=>c!==code); else S.favs.push(code);
   try{ localStorage.setItem('tev-favs', JSON.stringify(S.favs)); }catch(e){}
+  try{ navigator.storage?.persist?.(); }catch(e){}
+  try{ document.cookie='tevfavs='+encodeURIComponent(JSON.stringify(S.favs))+'; max-age=315360000; path=/; SameSite=Lax'; }catch(e){}
   pintarEstaciones();
   if(popCode===code && popEst && map.hasLayer(popEst)){ const c=cacheSal[code]; popEst.setContent(htmlPopupEst(code, c?c.s:null)); }
   if(S.mode==='favs') pintarFavs();
   if(S.mode==='station') pintarEstacion();
+}
+function botoFavGran(code){
+  const f=esFav(code);
+  return `<button class="favgran ${f?'on':''}" data-fav="${esc(code)}" aria-label="${f?'Treure de preferides':'Guardar a preferides'}"><span class="fgn">${esc(nom(code))}</span><span class="fgs">${f?'★':'☆'}</span></button>`;
 }
 function botoFav(code){
   const f=esFav(code);
@@ -1591,7 +1600,7 @@ function htmlFutur(s){
 }
 async function pintarFutur(code, acc){
   const L_=$('list'), q=S.quan, data=dataDia(q.dia);
-  $('stDesc').innerHTML=`Trens des de ${esc(nom(code))} · <b>${esc(nomDia(data).replace(/^[AD]/,c=>c.toLowerCase()))} a partir de les ${secHHMM(q.sec)}</b><span class="accline ${acc.cls}">${acc.icon} ${esc(acc.txt)}</span>${botoFav(code)}`;
+  $('stDesc').innerHTML=`${botoFavGran(code)}<b>${esc(nomDia(data).replace(/^[AD]/,c=>c.toLowerCase()))} a partir de les ${secHHMM(q.sec)}</b><span class="accline ${acc.cls}">${acc.icon} ${esc(acc.txt)}</span>`;
   if(!S.horarios || !S.cal){ L_.innerHTML='<div class="empty">Carregant horaris…</div>'; return; }
   const sort=sortidesProgramades(code, data, q.sec, 25);
   await completarViajes(sort.map(s=>s.tid));
@@ -1794,7 +1803,7 @@ async function ciclo(){
   cargarAvisos();
   try{ const e=localStorage.getItem('tev-est'); if(e && S.stops[e]){ S.station=e; $('search').value=S.stops[e].name; } }catch(e){}
   S.favs=S.favs.filter(c=>S.stops[c]);
-  if(S.favs.length){ S.mode='favs'; mostrarPestanya(); pintarFavs(); }
+  if(S.favs.length){ S.mode='favs'; mostrarPestanya(); pintarFavs(); } else { S.mode='station'; mostrarPestanya(); pintarEstacion(); }
   if(esMobil()) tancarFull();
   setInterval(()=>{ if(S.mode==='favs' && !S.quan) pintarFavs(); }, 20000);
   setInterval(ciclo, REFRESH);
