@@ -282,6 +282,13 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 /* La capçalera no bloqueja el mapa: només els seus botons són clicables */
 .top{pointer-events:none}
 .top .hcard,.top .chip{pointer-events:auto}
+/* Selector d'hora (trens futurs) */
+.quan{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.quan button{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--muted);font:500 13px var(--sans);cursor:pointer}
+.quan button.on{background:var(--text);border-color:var(--text);color:#fff}
+.quan input{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font:500 13px var(--sans);min-width:96px}
+.quan input:focus{outline:none;border-color:var(--text)}
+.big.hora{color:var(--text);font-size:16px;font-weight:600}
 /* Donacions */
 .donbtn{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--text);font:500 13px var(--sans);cursor:pointer;text-decoration:none;white-space:nowrap}
 .donbtn:hover{background:var(--card)}
@@ -342,6 +349,12 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
       <div id="hdrSt" style="display:none">
         <input class="search" id="search" list="stList" placeholder="Busca la teva estació" autocomplete="off">
         <datalist id="stList"></datalist>
+        <div class="quan" id="quan">
+          <button data-q="ara" class="on">Ara</button>
+          <button data-q="0">Avui</button>
+          <button data-q="1">Demà</button>
+          <input type="time" id="quanHora" step="300" aria-label="Hora">
+        </div>
         <div class="desc" id="stDesc"></div>
       </div>
     </header>
@@ -733,7 +746,10 @@ async function cargarHorarios(){
   const [stTxt, calTxt] = await Promise.all([T(await urlGTFS('stop_times.txt')), urlGTFS('calendar_dates.txt').then(u=>u?T(u):'').catch(()=>'')]);
   // serveis que circulen avui (el trip_id d'FGC comença pel service_id)
   const hoy=todayStr(); S.svcHoy=new Set();
-  calTxt.split('\n').forEach(l=>{ const c=l.trim().split(','); if(c[1]===hoy && c[2]==='1') S.svcHoy.add(c[0]); });
+  S.cal=new Map();
+  calTxt.split('\n').forEach(l=>{ const c=l.trim().split(','); if(c[2]!=='1') return;
+    let s=S.cal.get(c[1]); if(!s){ s=new Set(); S.cal.set(c[1],s); } s.add(c[0]);
+    if(c[1]===hoy) S.svcHoy.add(c[0]); });
   const lines = stTxt.split('\n'); const h = lines[0].split(',');
   const iT=h.indexOf('trip_id'), iA=h.indexOf('arrival_time'), iD=h.indexOf('departure_time'), iS=h.indexOf('stop_id'), iQ=h.indexOf('stop_sequence');
   for(let k=1;k<lines.length;k++){
@@ -817,10 +833,11 @@ async function completarViajes(ids){
 }
 
 // Une horario + previsión de un viaje: lista de paradas con hora programada y estimada
-function paradasViaje(tripId){
-  const sch=S.sched.get(tripId); const rt=S.rt.get(tripId);
+function paradasViaje(tripId, dataForcada){
+  const sch=S.sched.get(tripId); let rt=S.rt.get(tripId);
   if(!sch) return null;
-  const date = rt?.date || todayStr(); const mid=gtfsMidnight(date);
+  if(dataForcada && rt && rt.date!==dataForcada) rt=null;   // un altre dia: només l'horari
+  const date = dataForcada || rt?.date || todayStr(); const mid=gtfsMidnight(date);
   const byStop={}; (rt?.stus||[]).forEach(u=>{ if(u.stop){ byStop[u.stop]=u; byStop[parentOf(u.stop)]=byStop[parentOf(u.stop)]||u; } });
   let lastDelay=null;
   return sch.map(s=>{
@@ -1025,6 +1042,7 @@ async function pintarEstacion(){
   if(!S.station){ $('stDesc').textContent=''; L_.innerHTML='<div class="empty">Escriu el nom de la teva estació o toca una estació al mapa per veure els propers trens amb l\'hora real.</div>'; return; }
   const code=S.station, ahora=Date.now();
   const acc=accesibilidad(code);
+  if(S.quan){ await pintarFutur(code, acc); return; }
   $('stDesc').innerHTML=`Properes sortides des de ${esc(nom(code))}<span class="accline ${acc.cls}">${acc.icon} ${esc(acc.txt)}</span>${botoFav(code)}`;
   const salidas=await salidasEstacion(code);
   if(S.station!==code || S.mode!=='station') return;
@@ -1254,9 +1272,9 @@ function puntsRuta(tid){
   if(sh) return sh.pts;
   const a=S.sched.get(tid)||[]; return a.map(st=>S.stops[parentOf(st.stop)]||S.stops[st.stop]).filter(s=>s&&isFinite(s.lat)).map(s=>[s.lat,s.lon]);
 }
-function dibuixarTrajecte(tid, encuadra){
+function dibuixarTrajecte(tid, encuadra, data){
   capaRuta.clearLayers();
-  const par=paradasViaje(tid); if(!par) return;
+  const par=paradasViaje(tid, data); if(!par) return;
   const lin=(S.trains.find(x=>x.id===tid)?.lin)||S.trips.get(tid)?.route||'?';
   const col=colorOf(lin), pts=puntsRuta(tid), ara=Date.now();
   if(pts.length>1){
@@ -1275,27 +1293,28 @@ function dibuixarTrajecte(tid, encuadra){
     map.fitBounds(L.latLngBounds(pts), gran?{paddingTopLeft:[400,120],paddingBottomRight:[r.width+50,40]}:{padding:[40,40]});
   }
 }
-async function verTrajecte(tid, est){
+async function verTrajecte(tid, est, data){
   if(!tid) return;
   map.closePopup();
+  if(data===todayStr()) data=null;
   if(!S.trips.has(tid)) await completarViajes([tid]);
-  const enMarxa=S.trains.find(x=>x.id===tid);
+  const enMarxa=!data && S.trains.find(x=>x.id===tid);
   if(enMarxa){ S.selRuta=null; abrirTren(tid,false); dibuixarTrajecte(tid,true); return; }
   if(S.selRuta?.tid!==tid) $('card').classList.remove('exp');
-  S.sel=null; S.follow=false; S.selRuta={tid, est}; pintarTrenes();
-  dibuixarTrajecte(tid,true);
+  S.sel=null; S.follow=false; S.selRuta={tid, est, data}; pintarTrenes();
+  dibuixarTrajecte(tid,true,data);
   pintarTrajecte();
 }
 function pintarTrajecte(){
   const r=S.selRuta; if(!r) return;
-  const tid=r.tid, par=paradasViaje(tid), c=$('card'); if(!par) return;
+  const tid=r.tid, par=paradasViaje(tid, r.data), c=$('card'); if(!par) return;
   const info=S.trips.get(tid)||{}; const lin=info.route||'?', col=colorOf(lin), ara=Date.now();
   const ini=par[0], fi=par[par.length-1];
   const surt=ini.estD??ini.progD, falta=Math.round((surt-ara)/60000);
   const real=par.some(p=>p.rt);
   c.innerHTML=`<button class="x" aria-label="Tancar">×</button>`+cardShell(`
     <h2><span style="color:${col}">${esc(lin)}</span> ${esc(nom(ini.stop))} → ${esc(info.headsign||nom(fi.stop))}</h2>
-    <div class="sub">${falta>0?`Encara no ha sortit · surt d'${esc(nom(ini.stop))} en ${falta} min (${hm(surt)})`:'Trajecte'} · ${real?'<span style="color:var(--ok)">temps real</span>':'segons horari'}</div>
+    <div class="sub">${r.data?`${esc(nomDia(r.data))} · surt d'${esc(nom(ini.stop))} a les ${hm(surt)}`:falta>0?`Encara no ha sortit · surt d'${esc(nom(ini.stop))} en ${falta>=90?hm(surt):falta+' min ('+hm(surt)+')'}`:'Trajecte'} · ${real?'<span style="color:var(--ok)">temps real</span>':'segons horari'}</div>
     <div class="row"><span>Sortida</span><span>${hm(surt)}</span></div>
     <div class="row"><span>Arribada a ${esc(nom(fi.stop))}</span><span>${hm(fi.est??fi.prog)}</span></div>
     <div class="row"><span>Parades</span><span>${par.length}</span></div>`,`
@@ -1304,7 +1323,7 @@ function pintarTrajecte(){
   c.classList.add('show');
   c.querySelector('.x').onclick=cerrar;
 }
-setInterval(()=>{ if(S.selRuta){ if(S.trains.some(t=>t.id===S.selRuta.tid)){ const r=S.selRuta; verTrajecte(r.tid,r.est); } else pintarTrajecte(); } }, 15000);
+setInterval(()=>{ if(S.selRuta){ if(!S.selRuta.data && S.trains.some(t=>t.id===S.selRuta.tid)){ const r=S.selRuta; verTrajecte(r.tid,r.est); } else pintarTrajecte(); } }, 15000);
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.sel) cerrar(); });
 const prevPos={};
 function velocidad(t){ const v=velocidadMov(t.id); if(v!=null) return v; return prevPos[t.id]?.v ? Math.round(prevPos[t.id].v) : null; }
@@ -1358,7 +1377,7 @@ $('card').addEventListener('click',e=>{ const it=e.target.closest('.slist .item[
 $('list').addEventListener('click',e=>{
   const it=e.target.closest('.item[data-id]'); if(!it) return;
   const fc=it.closest('.favcard'); const est=fc?fc.querySelector('[data-go]')?.dataset.go:(S.mode==='station'?S.station:null);
-  verTrajecte(it.dataset.id, est);
+  verTrajecte(it.dataset.id, est, it.dataset.date||null);
 });
 document.addEventListener('click',e=>{ const pr=e.target.closest('.estpop .pr[data-id]'); if(pr) verTrajecte(pr.dataset.id, popCode); });
 map.on('dragstart',()=>{ S.follow=false; });
@@ -1416,6 +1435,65 @@ function iniciarDonacions(){
   let ja=0; try{ ja=+localStorage.getItem('tev-don')||0; }catch(e){}
   if(Date.now()-ja > 30*864e5) m.classList.add('show');
 }
+
+/* ===== Trens futurs: triar una hora (avui o demà) a la pestanya Estació ===== */
+S.quan=null;   // null = ara; si no {dia:0|1, sec}
+const dataDia = off => new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid'}).format(new Date(Date.now()+off*864e5)).replace(/-/g,'');
+const nomDia = d => d===dataDia(0)?'Avui':d===dataDia(1)?'Demà':`${d.slice(6,8)}/${d.slice(4,6)}`;
+const ara5 = () => { const p=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Madrid',hourCycle:'h23'}).split(':').map(Number); return Math.ceil((p[0]*3600+p[1]*60)/300)*300; };
+const secHHMM = s => String(Math.floor(s/3600)%24).padStart(2,'0')+':'+String(Math.floor(s%3600/60)).padStart(2,'0');
+function idxEstacions(){
+  if(S.idxEst) return S.idxEst;
+  S.idxEst=new Map();
+  S.sched.forEach((a,tid)=>{ a.forEach((st,i)=>{ if(i===a.length-1) return;
+    const k=parentOf(st.stop); let v=S.idxEst.get(k); if(!v){v=[];S.idxEst.set(k,v);} v.push({tid, dep:st.dep}); }); });
+  return S.idxEst;
+}
+function sortidesProgramades(code, data, secDes, n){
+  const llista=idxEstacions().get(code)||[];
+  const avui=S.cal?.get(data), ahir=S.cal?.get(dataDia(nomDia(data)==='Demà'?0:-1));
+  const out=[];
+  llista.forEach(x=>{
+    const svc=x.tid.split('|')[0];
+    if(avui?.has(svc) && x.dep>=secDes && x.dep<86400+secDes) out.push({tid:x.tid, data, dep:x.dep});
+    else if(ahir?.has(svc) && x.dep>=86400+secDes) out.push({tid:x.tid, data:dataDia(nomDia(data)==='Demà'?0:-1), dep:x.dep});
+  });
+  out.forEach(o=>o.prog=gtfsMidnight(o.data)+o.dep*1000);
+  out.sort((a,b)=>a.prog-b.prog);
+  return out.slice(0,n);
+}
+async function pintarFutur(code, acc){
+  const L_=$('list'), q=S.quan, data=dataDia(q.dia);
+  $('stDesc').innerHTML=`Trens des de ${esc(nom(code))} · <b>${esc(nomDia(data).toLowerCase())} a partir de les ${secHHMM(q.sec)}</b><span class="accline ${acc.cls}">${acc.icon} ${esc(acc.txt)}</span>${botoFav(code)}`;
+  if(!S.horarios || !S.cal){ L_.innerHTML='<div class="empty">Carregant horaris…</div>'; return; }
+  const sort=sortidesProgramades(code, data, q.sec, 25);
+  await completarViajes(sort.map(s=>s.tid));
+  if(S.station!==code || S.mode!=='station' || S.quan!==q) return;
+  L_.innerHTML = sort.map(s=>{
+    const info=S.trips.get(s.tid)||{}; const a=S.sched.get(s.tid); const dest=info.headsign||nom(a[a.length-1].stop);
+    const lin=info.route||'?';
+    return `<div class="item" data-id="${esc(s.tid)}" data-date="${s.data}">
+      <div class="big hora">${hm(s.prog)}</div>
+      <div><div class="t"><span class="lin" style="background:${colorOf(lin)}">${esc(lin)}</span> ${esc(dest)}</div>
+      <div class="m">${esc(nomDia(s.data))} · segons horari</div></div><div></div></div>`;
+  }).join('') || `<div class="empty">No hi ha trens des d'aquesta estació a partir d'aquesta hora.</div>`;
+}
+function marcarQuan(){
+  document.querySelectorAll('#quan button').forEach(b=>b.classList.toggle('on', S.quan ? b.dataset.q===String(S.quan.dia) : b.dataset.q==='ara'));
+  $('quanHora').value = S.quan ? secHHMM(S.quan.sec) : '';
+}
+$('quan').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-q]'); if(!b) return;
+  if(b.dataset.q==='ara') S.quan=null;
+  else S.quan={dia:+b.dataset.q, sec:S.quan?S.quan.sec:(b.dataset.q==='0'?ara5():8*3600)};
+  marcarQuan(); pintarEstacion();
+});
+$('quanHora').addEventListener('change',()=>{
+  const v=$('quanHora').value; if(!v) return;
+  const [hh,mm]=v.split(':').map(Number);
+  S.quan={dia:S.quan?S.quan.dia:0, sec:hh*3600+mm*60};
+  marcarQuan(); pintarEstacion();
+});
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(){
