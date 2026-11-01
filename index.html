@@ -548,7 +548,11 @@ function prepararMovimiento(t){
   if(real.d>400){ delete S.motion[t.id]; return; }       // el tren no está sobre este trazado
   const prev=S.motion[t.id];
   let s0=real.s;
-  if(prev){ const disp=sEn(prev, ahora); if(Math.abs(disp-real.s)<1200) s0=disp; }  // sin saltos hacia atrás
+  // Si FGC no ha canviat la posició (dada encallada), es manté la posició estimada i no es fa tornar el tren enrere.
+  const realNova = !prev || prev.realS==null || Math.abs(prev.realS-real.s)>5;
+  if(prev){ const disp=sEn(prev, ahora);
+    if(!realNova){ if(disp>=real.s-50) s0=disp; }
+    else if(Math.abs(disp-real.s)<1200) s0=disp; }
   const keys=[{t:ahora, s:s0}]; let idx=Math.max(0, real.i-2), sAnt=s0;
   const paradas=t.par.slice(t.sigIdx, t.sigIdx+8);
   paradas.forEach((p,j)=>{
@@ -559,7 +563,12 @@ function prepararMovimiento(t){
     let llega=p.est??p.prog, sale=p.estD??p.progD??llega;
     const ultimo=keys[keys.length-1];
     const nomE=nom(p.stop);
-    if(j===0 && t.parado){ keys.push({t:Math.max(ahora+1000, sale), s:s0, nom:nomE, tipo:'sale'}); sAnt=s0; return; }
+    if(j===0 && t.parado){
+      // Aturat: espera fins a l'hora de sortida. Si ja fa més d'1 min que havia de sortir, la dada d'FGC
+      // probablement va endarrerida, així que el tren surt (no es queda clavat a l'estació).
+      const marge = 60000;
+      const surt = sale > ahora ? sale : (ahora - sale < marge ? sale + marge : ahora);
+      keys.push({t:Math.max(ahora+1, surt), s:s0, nom:nomE, tipo:"sale"}); sAnt=s0; return; }
     // si la hora estimada ya ha pasado, se le da el tiempo justo para llegar (≈ 45 km/h)
     const minimo = ultimo.t + Math.max(1000, (s-ultimo.s)/12.5*1000);
     if(llega < minimo) llega = minimo;
@@ -570,7 +579,7 @@ function prepararMovimiento(t){
   if(keys.length<2){ delete S.motion[t.id]; return; }
   if(prev) keys.forEach(k=>{ if(k.nom && prev.keys.some(o=>o.hecho && o.nom===k.nom && o.tipo===k.tipo)) k.hecho=true; });
   keys.forEach(k=>{ if(k.nom && k.t<=ahora) k.hecho=true; });
-  S.motion[t.id]={sh, keys};
+  S.motion[t.id]={sh, keys, realS:real.s};
 }
 function velocidadMov(id){
   const mo=S.motion[id]; if(!mo) return null; const a=Date.now();
