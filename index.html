@@ -38,7 +38,7 @@ function temaVol(){var t=null;try{t=localStorage.getItem('tev-tema');}catch(e){}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="mapagl.js?v=6"></script>
+<script src="mapagl.js?v=7"></script>
 <style>
 :root{
   --bg:#f4f5f7; --panel:#ffffff; --card:#f6f7f9; --line:#e6e9ee; --track:#d3d9e0;
@@ -546,7 +546,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 46</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 47</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1248,6 +1248,10 @@ function desamuntegar(){
   v.forEach(o=>{ const xoca=fets.some(f=>Math.abs(f.x-o.x)<58 && Math.abs(f.y-o.y)<26); o.el.classList.toggle('mini', xoca);
     const ext=o.el.closest('.lmk'); if(ext){ if(xoca){ ext.style.zIndex='1'; } else if(!ext.style.zIndex || ext.style.zIndex==='1'){ ext.style.zIndex='5'; } }   // els punts petits, sempre per sota de les etiquetes
     if(!xoca) fets.push(o); });
+  // els trens fan d'obstacle: els noms que quedarien a sota s'aparten o s'amaguen
+  try{ const lluny=document.getElementById('map').classList.contains('z10');
+    map.setObstacles(v.map(o=>{ const ll=map.ml.unproject([o.x,o.y]), petit=o.el.classList.contains('mini')||(lluny&&!o.el.classList.contains('sel'));
+      return {lng:ll.lng, lat:ll.lat, t: petit?'•':(o.el.querySelector('.tpill')?.textContent||'S1').trim()+'  ', s: petit?10:14}; })); }catch(e){}
 }
 map.on('moveend zoomend', ()=>desamuntegar());
 setInterval(()=>{ if(!document.hidden && !mapaMovent) desamuntegar(); }, 1500);

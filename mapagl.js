@@ -55,7 +55,7 @@ function MapW(id, opts){
   { let pend=false; const ro=new ResizeObserver(()=>{ if(pend) return; pend=true; requestAnimationFrame(()=>{ pend=false; try{ this.ml.resize(); }catch(e){} }); }); ro.observe(el); }
   try{ this.ml.touchPitch.disable(); this.ml.keyboard.disableRotation?.(); }catch(e){}
   this._loaded=false;
-  this.ml.on('style.load',()=>{ this._loaded=true; this._groups.forEach(g=>g._glInit(true)); this.fire('styleload'); });
+  this.ml.on('style.load',()=>{ this._loaded=true; this._groups.forEach(g=>g._glInit(true)); if(this._obs) this.setObstacles(this._obs); this.fire('styleload'); });
   ['movestart','moveend','zoomstart','zoomend','dragstart','dragend','rotate','rotateend'].forEach(k=>this.ml.on(k,e=>this.fire(k,e)));
   // clic al mapa fora de cap element: tanca la bombolla
   this.ml.on('click',e=>{ if(e._shimHit) return; const t=e.originalEvent&&e.originalEvent.target; if(t&&t.closest&&t.closest('.maplibregl-marker,.maplibregl-popup')) return; this.closePopup(); this.fire('click',e); });
@@ -108,6 +108,12 @@ Object.assign(MapW.prototype, Ev, {
     this.ml.easeTo({center:[p.lng,p.lat], zoom:Math.max(this.ml.getZoom(), 14.3-DZ), padding:pad, duration:800}); },
   alliberar(){ this.ml.easeTo({padding:{top:0,bottom:0,left:0,right:0}, duration:300}); },
   resetNorth(){ this.ml.easeTo({bearing:0, pitch:0, duration:400}); },
+  // obstacles: rectangles invisibles a sobre de tot (els trens) perquè els noms del mapa i de les estacions s'apartin o s'amaguin en lloc de quedar tapats
+  setObstacles(list){ this._obs=list||[]; const g=this.ml; if(!this._loaded) return;
+    const data={type:'FeatureCollection', features:this._obs.map(o=>({type:'Feature',geometry:{type:'Point',coordinates:[o.lng,o.lat]},properties:{t:o.t,s:o.s||13}}))};
+    if(!g.getSource('obs')){ g.addSource('obs',{type:'geojson',data});
+      g.addLayer({id:'obs',type:'symbol',source:'obs',layout:{'text-field':['get','t'],'text-font':['Noto Sans Regular'],'text-size':['get','s'],'text-padding':7,'text-allow-overlap':true,'text-ignore-placement':false,'text-rotation-alignment':'viewport','text-pitch-alignment':'viewport'},paint:{'text-opacity':0}}); }
+    else { g.getSource('obs').setData(data); if(g.getLayer('obs')) g.moveLayer('obs'); } },
   setBaseStyle(url){ if(this._styleUrl===url) return; this._styleUrl=url; this._loaded=false; this.ml.setStyle(url,{diff:false}); },
   // capa implícita per a elements afegits directament al mapa
   _solo(layer){ const g=new Group([]); g._solo=true; g.addTo(this); g.addLayer(layer); layer._soloGroup=g; return this; }
@@ -144,7 +150,7 @@ Object.assign(Group.prototype, Ev, {
          paint:{'circle-radius':['get','r'],'circle-color':['get','fc'],'circle-opacity':['get','fo'],'circle-stroke-color':['get','c'],'circle-stroke-width':['get','w'],'circle-stroke-opacity':['get','o'],'circle-pitch-alignment':'viewport'}});
     add({id:id.hit, _k:3, type:'circle', source:id.src, filter:['all',tipus('c'),['==',['get','i'],1]], paint:{'circle-radius':['max',14,['get','r']],'circle-opacity':0,'circle-pitch-alignment':'viewport'}});
     add({id:id.lab, _k:4, type:'symbol', source:id.src, filter:['all',tipus('c'),['has','lab']],
-         layout:{'text-field':['get','lab'],'text-font':['Noto Sans Regular'],'text-size':11.5,'text-anchor':'left','text-offset':[0.9,0],'text-optional':true,'text-padding':2,'text-max-width':14,'symbol-sort-key':['get','ls']},
+         layout:{'text-field':['get','lab'],'text-font':['Noto Sans Regular'],'text-size':11.5,'text-variable-anchor':['left','right','top','bottom'],'text-radial-offset':0.9,'text-optional':true,'text-padding':2,'text-max-width':14,'symbol-sort-key':['get','ls']},
          paint:{'text-color':['get','tc'],'text-halo-color':['get','hc'],'text-halo-width':1.6}});
     if(!this._evOk){ this._evOk=true; this._bindEvents(); }
     this._flush();
