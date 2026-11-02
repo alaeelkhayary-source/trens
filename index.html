@@ -459,7 +459,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 30</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 31</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -836,11 +836,7 @@ function registrarSegundo(){
     });
   }
   // trazo del tren seleccionado
-  if(S.sel && S.track[S.sel]){
-    const pts=S.track[S.sel].map(x=>[x[0],x[1]]);
-    if(!trazo) trazo=L.polyline(pts,{color:'#14171a',weight:2,opacity:.35,dashArray:'2 6',interactive:false}).addTo(map);
-    else trazo.setLatLngs(pts);
-  } else if(trazo){ map.removeLayer(trazo); trazo=null; }
+  // (el rastre de punts del tren seleccionat s'ha tret: feia salts quan FGC corregia la posició)
   // reloj y tarjeta
   $('clock').textContent=new Date().toLocaleTimeString('ca-ES',{timeZone:'Europe/Madrid'});
   if(S.lastPosChange) $('ago').textContent=` · posicions FGC fa ${Math.round((ahora-S.lastPosChange)/1000)} s`;
