@@ -509,9 +509,9 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
         <div class="desc" id="stDesc"></div>
       </div>
       <div class="quan" id="quan" style="display:none">
+        <div class="qmode" id="qMode" role="tablist" aria-label="Tipus d'hora"><button type="button" data-qm="s" class="on">🚆 Hora de sortida</button><button type="button" data-qm="a">🏁 Hora d'arribada</button></div>
         <label class="qsel" id="qsel"><span class="qic">🕒</span><span class="qtx"><b id="qselTxt">Ara</b><small id="qselSub">Toca per triar dia i hora</small></span><span class="qch">▾</span><input type="datetime-local" id="quanDT" step="300" aria-label="Tria dia i hora"></label>
         <button data-q="ara" id="qAra" style="display:none">↺ Ara</button>
-        <div class="qmode" id="qMode" hidden><button type="button" data-qm="s" class="on">Sortir a partir de</button><button type="button" data-qm="a">Arribar abans de</button></div>
         <div class="qpop" id="qpop" hidden>
           <div class="qpr"><button type="button" data-qd="0">Avui</button><button type="button" data-qd="1">Demà</button><input type="date" id="qpD" aria-label="Dia"></div>
           <div class="qpr"><button type="button" data-qh="-30">−30′</button><input type="time" id="qpT" step="300" aria-label="Hora"><button type="button" data-qh="30">+30′</button></div>
@@ -523,7 +523,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 42</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 43</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1875,15 +1875,20 @@ function marcarQuan(){
   const q=S.quan, dt=$('quanDT');
   $('qsel').classList.toggle('on', !!q);
   $('qAra').style.display = q ? '' : 'none';
-  $('qMode').hidden = !q; document.querySelectorAll('#qMode [data-qm]').forEach(b=>b.classList.toggle('on', (b.dataset.qm==='a')===!!S.quanArr));
-  if(q){ const d=dataDia(q.dia); $('qselTxt').textContent=(S.quanArr?'Arribar · ':'')+nomDia(d).replace(/^./,c=>c.toUpperCase())+' · '+secHHMM(q.sec); $('qselSub').textContent='Segons horari · toca per canviar'; dt.value=isoD(d)+'T'+secHHMM(q.sec); }
+  document.querySelectorAll('#qMode [data-qm]').forEach(b=>b.classList.toggle('on', (b.dataset.qm==='a')===!!S.quanArr));
+  if(q){ const d=dataDia(q.dia); $('qselTxt').textContent=(S.quanArr?'Abans de · ':'')+nomDia(d).replace(/^./,c=>c.toUpperCase())+' · '+secHHMM(q.sec); $('qselSub').textContent='Segons horari · toca per canviar'; dt.value=isoD(d)+'T'+secHHMM(q.sec); }
   else { $('qselTxt').textContent='Ara'; $('qselSub').textContent='Temps real · toca per triar dia i hora'; dt.value=isoD(dataDia(0))+'T'+secHHMM(ara5()); }
   dt.min=isoD(dataDia(0))+'T00:00';
   if(S.cal){ const mx=[...S.cal.keys()].sort().pop(); if(mx) dt.max=isoD(mx)+'T23:55'; }
 }
 const repintarQuan = () => { marcarQuan(); if(S.mode==='favs') pintarFavs(); else if(S.mode==='viatge') pintarViatge(); else pintarEstacion(); };
 $('qAra').addEventListener('click',()=>{ S.quan=null; S.quanArr=false; $('qpop').hidden=true; repintarQuan(); });
-$('qMode').addEventListener('click',e=>{ const b=e.target.closest('[data-qm]'); if(!b) return; S.quanArr = b.dataset.qm==='a'; repintarQuan(); });
+$('qMode').addEventListener('click',e=>{ const b=e.target.closest('[data-qm]'); if(!b) return; const arr=b.dataset.qm==='a';
+  if(arr===!!S.quanArr) return; S.quanArr=arr;
+  // "arribar" no té sentit amb "ara": proposa d'aquí a 1 hora i obre el selector perquè la triïs
+  if(arr && !S.quan){ S.quan={dia:0, sec:Math.min(86100, ara5()+3600)}; repintarQuan();
+    if(HOVER) obrirQpop(); else { const i=$('quanDT'); try{ i.showPicker&&i.showPicker(); }catch(err){} } return; }
+  repintarQuan(); });
 $('quanDT').addEventListener('change',()=>{
   const v=$('quanDT').value; if(!v) return;
   const [d,t]=v.split('T'); const off=offDe(d.replace(/-/g,'')); if(off<0) return;
