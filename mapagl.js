@@ -101,7 +101,10 @@ Object.assign(MapW.prototype, Ev, {
   getBearing(){ return this.ml.getBearing(); },
   // seguir un tren: s'hi apropa i el deixa al centre de la part visible (sense la fitxa ni el panell)
   seguir(ll){ const p=toLL(ll), mob=window.innerWidth<=900, H=window.innerHeight;
-    const pad = mob ? {top:110, bottom:Math.round(H*0.46), left:0, right:0} : {top:90, bottom:30, left:380, right:430};
+    // al mòbil, el tren queda al mig de l'espai lliure entre la capçalera i la fitxa (mesurant la fitxa de veritat)
+    const top=document.querySelector('.top'), card=document.getElementById('card'), cr=card&&card.classList.contains('show')?card.getBoundingClientRect():null;
+    const pt=top?Math.round(top.getBoundingClientRect().bottom+10):110, pb=cr&&cr.height?Math.round(H-cr.top+24):Math.round(H*0.46);
+    const pad = mob ? {top:pt, bottom:Math.max(60,Math.min(H-pt-80,pb)), left:0, right:0} : {top:90, bottom:30, left:380, right:430};
     this.ml.easeTo({center:[p.lng,p.lat], zoom:Math.max(this.ml.getZoom(), 14.3-DZ), padding:pad, duration:800}); },
   alliberar(){ this.ml.easeTo({padding:{top:0,bottom:0,left:0,right:0}, duration:300}); },
   resetNorth(){ this.ml.easeTo({bearing:0, pitch:0, duration:400}); },

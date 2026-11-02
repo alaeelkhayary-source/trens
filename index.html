@@ -38,7 +38,7 @@ function temaVol(){var t=null;try{t=localStorage.getItem('tev-tema');}catch(e){}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="mapagl.js?v=5"></script>
+<script src="mapagl.js?v=6"></script>
 <style>
 :root{
   --bg:#f4f5f7; --panel:#ffffff; --card:#f6f7f9; --line:#e6e9ee; --track:#d3d9e0;
@@ -133,7 +133,8 @@ b,strong{font-weight:600}
 /* Bombolla d'estació */
 .estpop .maplibregl-popup-content{border-radius:14px;box-shadow:0 2px 6px rgba(16,24,40,.08),0 12px 32px rgba(16,24,40,.18);padding:14px 16px;background:var(--panel);color:var(--text);width:292px;max-width:calc(100vw - 40px);box-sizing:border-box}
 .estpop .maplibregl-popup-content{font-family:var(--sans)}
-.maplibregl-popup{z-index:5000}   /* la fitxa d'una estació sempre per sobre dels trens */
+.maplibregl-popup{z-index:5000}
+.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{z-index:3000}   /* la «i» dels crèdits del mapa, per sobre dels trens */   /* la fitxa d'una estació sempre per sobre dels trens */
 .estpop .maplibregl-popup-tip{border-top-color:var(--panel)!important}
 .ltt{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:4px 8px;font:12px var(--sans);white-space:nowrap;box-shadow:0 2px 8px rgba(16,24,40,.15);pointer-events:none}
 .nordbtn{position:absolute;z-index:500;right:440px;bottom:206px;width:40px;height:40px;border-radius:12px;border:none;background:var(--panel);box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
@@ -178,6 +179,7 @@ b,strong{font-weight:600}
 /* Trajectòria */
 .rtt{font:12px var(--sans);border-radius:8px;border:none;box-shadow:0 2px 8px rgba(16,24,40,.18);padding:4px 8px}
 .rtt s{color:var(--dim)}
+.maplibregl-marker.rtt{z-index:2500!important}   /* les etiquetes del recorregut, per sobre dels trens */
 .stops li.here{background:#fff6dc;border-radius:6px;padding:3px 6px;margin:0 -6px;font-weight:600}
 .pr.clic{cursor:pointer}.pr.clic:hover{background:var(--card)}
 .item[data-id]{cursor:pointer}
@@ -373,6 +375,9 @@ html.dark .stops li.meu{background:#3a2f12;color:#ffd666}
   .sheetx{display:flex;position:absolute;right:12px;top:8px;width:32px;height:32px;border:none;border-radius:50%;background:var(--card);color:var(--muted);font-size:18px;align-items:center;justify-content:center;cursor:pointer}
   .sheettitle{font-size:18px;font-weight:600;margin:0 0 4px}
   .foot{padding:10px 16px}
+  /* al mòbil tot el full fa scroll junt: la llista de trens ja no queda aixafada entre la capçalera i el peu */
+  aside{overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  aside .list{flex:none;overflow:visible;min-height:40vh}
   /* fitxa del tren a sobre de la barra */
   .card{left:8px;right:8px;width:auto;bottom:calc(var(--tbh) + var(--tbb) + 10px);max-height:42vh;max-height:42dvh;border-radius:18px;padding:8px 14px 12px;z-index:650;box-shadow:0 -4px 24px rgba(16,24,40,.16);overscroll-behavior:contain}
   .card.exp{max-height:68vh;max-height:68dvh}
@@ -541,7 +546,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 45</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 46</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1465,7 +1470,7 @@ async function pintarFavs(){
   const L_=$('list');
   if(!S.favs.length){
     $('favDesc').textContent='';
-    L_.innerHTML=`<div class="empty favempty"><div style="font-size:30px">☆</div><b>Encara no tens estacions preferides</b><br>Toca una estació al mapa (o passa-hi el cursor) i prem <b>☆ Afegir a preferides</b>. També ho pots fer des de la pestanya Estació.<br><br>Es guarden en aquest dispositiu.</div>`;
+    L_.innerHTML=`<div class="empty favempty"><div style="font-size:30px">☆</div><b>Encara no tens estacions preferides</b><br>${HOVER?'Passa el cursor per una estació del mapa':'Toca una estació al mapa'} i prem <b>☆ Afegir a preferides</b>. També ho pots fer des de la pestanya <b>Trens</b>, amb l'estrella al costat del nom.<br><br>Es guarden en aquest dispositiu.</div>`;
     return;
   }
   const q=S.quan;
@@ -1549,6 +1554,7 @@ function cardExpand(v){
   const c=$('card'); c.classList.toggle('exp',v);
   const b=c.querySelector('.cmore'); if(b) b.textContent=v?'Mostrar menys ▴':(b.dataset.etiq||'Més detalls')+' ▾';
   if(!v) c.scrollTop=0;
+  if(S.follow && S.sel) setTimeout(()=>{ const m=S.markers[S.sel]; if(S.follow && m) map.seguir(m.getLatLng()); }, 320);   // el tren no queda sota la fitxa
 }
 (function(){
   const c=$('card'); let y0=null, dy=0;
@@ -1569,7 +1575,7 @@ function abrirTren(id, centrar){
   if(cambio) $('card').classList.remove('exp');
   if(S.selEst){ S.selEst=null; pintarEstaciones(); }
   S.selRuta=null;
-  S.sel=id; if(centrar){ S.follow=true; const m=S.markers[id]; map.seguir(m?m.getLatLng():t.pos); }
+  S.sel=id; if(centrar){ S.follow=true; requestAnimationFrame(()=>{ if(S.sel!==id) return; const m=S.markers[id]; map.seguir(m?m.getLatLng():t.pos); }); }   // després de pintar la fitxa, per saber-ne l'alçada
   if(cambio || viSel>=0){ viSel=-1; dibuixarTrajecte(id,false); }
   refrescarTarjeta();
   if(cambio) pintarTrenes();
@@ -1591,7 +1597,7 @@ function refrescarTarjeta(){
     <div class="sub">${t.unidad?'Unitat sèrie '+esc(t.unidad):''}</div>
     <div class="row"><span>Retard</span><span style="color:${col};font-weight:700">${d==null?'sense dades':d>0?d+' min':d<0?(-d)+' min avançat':'a l\'hora'}</span></div>
     <div class="row"><span>On és</span><span>${esc(dondeTren(t))}</span></div>
-    ${sig&&!t.parado?`<div class="row"><span>Arriba a ${esc(nom(sig.stop))}</span><span>${hm(sig.est??sig.prog)}</span></div>`:''}
+    ${sig&&!t.parado&&sig!==fin?`<div class="row"><span>Arriba a ${esc(nom(sig.stop))}</span><span>${hm(sig.est??sig.prog)}</span></div>`:''}
     ${fin?`<div class="row"><span>Arribada a ${esc(nom(fin.stop))}</span><span>${hm(fin.est??fin.prog)}</span></div>`:''}
     ${avisos.length?`<div class="avis">⚠ ${avisos.map(esc).join('<br>⚠ ')}</div>`:''}${banMeu(id)}`,`
     ${fin?`<div class="row"><span>Arribada prevista (horari)</span><span>${hm(fin.prog)}</span></div>`:''}
@@ -1635,7 +1641,7 @@ function dibuixarTrajecte(tid, encuadra, data){
     const e=S.stops[parentOf(p.stop)]||S.stops[p.stop]; if(!e||!isFinite(e.lat)) return;
     const t=p.est??p.prog, passat=t<ara-30000, extrem=i===0||i===par.length-1;
     L.circleMarker([e.lat,e.lon],{radius:extrem?7:5,color:col,weight:3,fillColor:passat?col:'#fff',fillOpacity:1,interactive:true})
-      .bindTooltip(`<b>${esc(e.name)}</b> · ${hm(t)}${p.est!=null&&Math.round((p.est-p.prog)/60000)>0?` <s>${hm(p.prog)}</s>`:''}`,{direction:'top',className:'rtt',permanent:extrem,offset:[0,-6]})
+      .bindTooltip(`<b>${esc(e.name)}</b> · ${hm(t)}${p.est!=null&&Math.round((p.est-p.prog)/60000)>0?` <s>${hm(p.prog)}</s>`:''}`,{direction:'top',className:'rtt',permanent:extrem,offset:[0,extrem?-16:-6]})
       .addTo(capaRuta);
   });
   if(encuadra && pts.length>1){
@@ -1772,6 +1778,7 @@ map.on('dragstart',()=>{ S.follow=false; });
 const TITOLS={favs:'★ Preferides', late:'Retards', station:'Trens', viatge:'Viatge', avisos:'Avisos'};
 const esMobil=()=>window.innerWidth<=900;
 function obrirFull(mode){
+  if(S.mode!==mode) document.querySelector('aside').scrollTop=0;
   S.mode=mode; mostrarPestanya();
   $('sheettitle').textContent=TITOLS[mode]||'';
   document.body.classList.add('sheet');
@@ -1795,7 +1802,7 @@ document.addEventListener('click',e=>{
 });
 // lliscar cap avall per tancar el full
 (()=>{ let y0=null; const a=document.querySelector('aside');
-  a.addEventListener('touchstart',e=>{ if(a.querySelector('.list').scrollTop<=0 || e.target.closest('header')) y0=e.touches[0].clientY; else y0=null; },{passive:true});
+  a.addEventListener('touchstart',e=>{ if(a.scrollTop<=0 || e.target.closest('header')) y0=e.touches[0].clientY; else y0=null; },{passive:true});
   a.addEventListener('touchend',e=>{ if(y0!=null && e.changedTouches[0].clientY-y0>80) tancarFull(); y0=null; },{passive:true});
 })();
 function actualitzarBadge(){
@@ -2252,7 +2259,7 @@ function dibuixarViatge(o, encuadra){
   o.legs.forEach((l,k)=>{
     if(l.walk){ const A=S.stops[l.de], B=S.stops[l.a2]; if(A&&B){ tots.push([A.lat,A.lon],[B.lat,B.lon]);
       L.polyline([[A.lat,A.lon],[B.lat,B.lon]],{color:'#6b7480',weight:4,opacity:.9,dashArray:'2 6',interactive:false}).addTo(capaRuta);
-      if(k===o.legs.length-1) L.circleMarker([B.lat,B.lon],{radius:7,color:'#6b7480',weight:3,fillColor:'#6b7480',fillOpacity:1}).bindTooltip(`<b>${esc(B.name)}</b> · arriba ${hm(l.arrR)}`,{permanent:true,direction:'top',className:'rtt',offset:[0,-6]}).addTo(capaRuta); }
+      if(k===o.legs.length-1) L.circleMarker([B.lat,B.lon],{radius:7,color:'#6b7480',weight:3,fillColor:'#6b7480',fillOpacity:1}).bindTooltip(`<b>${esc(B.name)}</b> · arriba ${hm(l.arrR)}`,{permanent:true,direction:'top',className:'rtt',offset:[0,-16]}).addTo(capaRuta); }
       return; }
     const sch=S.sched.get(l.tid), A=S.stops[parentOf(sch[l.a].stop)], B=S.stops[parentOf(sch[l.b].stop)], col=colorOf(l.lin);
     let pts=trossShape(puntsRuta(l.tid), A, B);
@@ -2262,7 +2269,7 @@ function dibuixarViatge(o, encuadra){
     L.polyline(pts,{color:col,weight:6,opacity:1,interactive:false}).addTo(capaRuta);
     sch.slice(l.a+1,l.b).forEach(s=>{ const e=S.stops[parentOf(s.stop)]; if(e) L.circleMarker([e.lat,e.lon],{radius:4,color:col,weight:2,fillColor:'#fff',fillOpacity:1,interactive:false}).addTo(capaRuta); });
     const punt=(e,t,txt,extrem)=>L.circleMarker([e.lat,e.lon],{radius:7,color:col,weight:3,fillColor:extrem?col:'#fff',fillOpacity:1})
-      .bindTooltip(`<b>${esc(e.name)}</b> · ${txt} ${hm(t)}`,{permanent:true,direction:'top',className:'rtt',offset:[0,-6]}).addTo(capaRuta);
+      .bindTooltip(`<b>${esc(e.name)}</b> · ${txt} ${hm(t)}`,{permanent:true,direction:'top',className:'rtt',offset:[0,-16]}).addTo(capaRuta);
     punt(A,l.depR,k===0?'surt':'canvi, surt',k===0);
     if(k===o.legs.length-1) punt(B,l.arrR,'arriba',true);
   });
