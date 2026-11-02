@@ -573,7 +573,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 52</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 53</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1784,8 +1784,11 @@ function pintarAvisos(){
 /* ===== Panell d'avisos importants (cinta que passa a baix, com a la tele) =====
    Només surt amb coses greus: línies tallades, serveis suprimits, retards forts, vaga… No amb les observacions de cada tren. */
 const GREU=/suprimi|cancel|interromp|tallad|tall de|sense servei|no hi ha servei|no circula|servei alternatiu|autob[uú]s substitutori|bus substitutori|vaga|aturad|incid[eè]ncia|aver[ií]a|retard/i;
+// Missatge de prova a la cinta (posar-lo a '' per treure'l)
+const AVIS_PROVA='Missatge de prova: aquesta és la cinta d\'avisos importants de Trens en viu';
 function avisosGreus(){
   const ara=Date.now(), out=new Map();
+  if(AVIS_PROVA) out.set('prova',{txt:AVIS_PROVA, lins:new Set(['PROVA']), greu:true});
   (S.alerts||[]).forEach(a=>{ if(!a.header) return;
     if(a.per.length && !a.per.some(p=>(!p.start||p.start<=ara)&&(!p.end||p.end>=ara))) return;
     const obs=a.id.startsWith('OBSERVATIONS'), efecte=[1,2,3,4,6,9].includes(a.effect);
