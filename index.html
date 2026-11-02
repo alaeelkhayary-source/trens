@@ -224,6 +224,27 @@ body.can-install .instbtn{display:flex}
 .zoom{position:absolute;z-index:500;right:440px;bottom:20px;display:flex;flex-direction:column;background:var(--panel);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
 .zoom button{width:40px;height:40px;background:none;border:none;color:var(--text);font-size:18px;cursor:pointer}
 .zoom button+button{border-top:1px solid var(--line)}
+.tick{position:absolute;z-index:560;left:20px;right:440px;bottom:20px;height:36px;display:flex;align-items:center;background:#b42318;color:#fff;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;cursor:pointer;font:600 14px var(--sans)}
+.tick[hidden]{display:none}
+.tick.w{background:#b54708}
+.tick .tl{flex:none;display:flex;align-items:center;gap:6px;height:100%;padding:0 12px;background:rgba(0,0,0,.22);font:800 12px var(--sans);letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
+.tick .tv{flex:1;min-width:0;overflow:hidden;height:100%;display:flex;align-items:center;-webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent)}
+.tick .tt{display:inline-flex;white-space:nowrap;will-change:transform;animation:tickmou var(--dur,30s) linear infinite}
+.tick .tt span{padding-right:56px}
+.tick .tt b{font-weight:800}
+.tick:hover .tt{animation-play-state:paused}
+.tick .tx{flex:none;width:34px;height:100%;border:none;background:none;color:#fff;font-size:18px;opacity:.85;cursor:pointer}
+@keyframes tickmou{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.tick .tt{animation:none}}
+body.hastick .locbtn,body.hastick .nordbtn,body.hastick .zoom,body.hastick .card,body.hastick .maplibregl-ctrl-bottom-left{margin-bottom:44px}
+.tickpop{position:fixed;inset:0;z-index:4000;background:rgba(10,12,16,.45);display:flex;align-items:flex-end;justify-content:center}
+.tickpop[hidden]{display:none}
+.tickpop>div{background:var(--panel);color:var(--text);width:min(560px,100%);max-height:70vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:var(--shadow)}
+.tickpop h3{margin:0 0 10px;font:700 17px var(--sans)}
+.tickpop li{margin:0 0 12px;line-height:1.45}
+.tickpop li small{display:block;color:var(--muted);font-size:12px}
+.tickpop ul{padding-left:18px;margin:0}
+.tickpop button{margin-top:6px;width:100%;padding:12px;border:none;border-radius:12px;background:var(--card);color:var(--text);font:600 15px var(--sans);cursor:pointer}
 .locbtn{position:absolute;z-index:500;right:440px;bottom:156px;width:40px;height:40px;border-radius:12px;border:none;background:var(--panel);color:var(--text);box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .locbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .locbtn svg .f{fill:currentColor;stroke:none}
@@ -362,6 +383,8 @@ html.dark .stops li.meu{background:#3a2f12;color:#ffd666}
   .top .chips.fi{-webkit-mask-image:none;mask-image:none}
   .chip{flex:none;padding:5px 10px;font-size:12px}
   .zoom{display:none}
+  .tick{position:fixed;left:8px;right:8px;bottom:calc(var(--tbh) + var(--tbb) + 8px);height:34px;z-index:640;font-size:13px}
+  body.sheet .tick{display:none}
   .locbtn{right:12px;bottom:calc(var(--tbh) + var(--tbb) + 34px);width:46px;height:46px;border-radius:50%}
   .maplibregl-ctrl-bottom-left{bottom:calc(var(--tbh) + var(--tbb) + 6px)}
   .nordbtn{right:12px;bottom:calc(var(--tbh) + var(--tbb) + 90px);width:46px;height:46px;border-radius:50%}
@@ -481,6 +504,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
 <script data-goatcounter="https://alae.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
+<div class="tickpop" id="tickPop" hidden><div><h3>⚠ Avisos importants</h3><ul id="tickList"></ul><button id="tickOk">D'acord</button></div></div>
 <div class="loading" id="loading"><div>Carregant la xarxa d'FGC…</div><div class="bar"><i></i></div><div id="loadTxt" style="font-size:12px"></div></div>
 <div class="app">
   <div class="mapwrap" style="position:absolute;inset:0">
@@ -501,6 +525,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <button class="locbtn" id="locBtn" aria-label="Estació més propera" title="Estació més propera"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" class="f"/></svg></button>
     <div class="zoom"><button id="zin" aria-label="Apropar">+</button><button id="zout" aria-label="Allunyar">−</button><button id="zfit" aria-label="Veure tota la xarxa" style="font-size:14px">⤢</button></div>
     <div class="card" id="card"></div>
+    <div class="tick" id="tick" hidden role="button" aria-label="Avisos importants d'FGC"><span class="tl">⚠ Avís</span><span class="tv"><span class="tt" id="tickT"></span></span><button class="tx" id="tickX" aria-label="Amagar">×</button></div>
   </div>
   <aside>
     <header>
@@ -548,7 +573,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 2/11 · 51</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 52</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1119,7 +1144,7 @@ async function cargarAvisos(){
     const m=await J(`${BASE}/alerts-gtfs_realtime/records?limit=1`);
     S.alerts=parseAlerts(await B(m.results[0].file.url));
   }catch(e){ console.warn('Sin avisos', e); S.alerts=null; }
-  pintarAvisos();
+  pintarAvisos(); try{ pintarTick(); }catch(e){}
 }
 // ruta y destino de los viajes que aún no conocemos (consulta por lotes)
 async function completarViajes(ids){
@@ -1756,8 +1781,38 @@ function pintarAvisos(){
   box.innerHTML = lista.length ? `<ul>${lista.slice(0,12).map(g=>`<li>${esc(g.a.header)}<small>${[...g.routes].slice(0,4).map(esc).join(' · ')}${g.n>1?` · ${g.n} serveis`:''}</small></li>`).join('')}</ul>` : '<p>Ara mateix no hi ha incidències a la xarxa.</p>';
 }
 
+/* ===== Panell d'avisos importants (cinta que passa a baix, com a la tele) =====
+   Només surt amb coses greus: línies tallades, serveis suprimits, retards forts, vaga… No amb les observacions de cada tren. */
+const GREU=/suprimi|cancel|interromp|tallad|tall de|sense servei|no hi ha servei|no circula|servei alternatiu|autob[uú]s substitutori|bus substitutori|vaga|aturad|incid[eè]ncia|aver[ií]a|retard/i;
+function avisosGreus(){
+  const ara=Date.now(), out=new Map();
+  (S.alerts||[]).forEach(a=>{ if(!a.header) return;
+    if(a.per.length && !a.per.some(p=>(!p.start||p.start<=ara)&&(!p.end||p.end>=ara))) return;
+    const obs=a.id.startsWith('OBSERVATIONS'), efecte=[1,2,3,4,6,9].includes(a.effect);
+    if(!(efecte || (!obs && GREU.test(a.header+' '+a.desc)) || (obs && /suprimi|cancel|no circula/i.test(a.header)))) return;
+    const k=a.header.trim(), o=out.get(k)||{txt:k, desc:a.desc, lins:new Set(), greu:[1,2].includes(a.effect)||/suprimi|cancel|interromp|tallad|sense servei|no circula|vaga/i.test(k)};
+    a.ents.forEach(e=>{ if(e.route) o.lins.add(e.route); }); out.set(k,o); });
+  // retards forts calculats per nosaltres: una línia amb 2 o més trens a 15 min o més
+  const per={}; (S.trains||[]).forEach(t=>{ const d=retrasoTren(t); if(d!=null && d>=15){ (per[t.lin]=per[t.lin]||[]).push(d); } });
+  Object.entries(per).forEach(([l,ds])=>{ if(ds.length>=2) out.set('ret|'+l,{txt:`Retards importants a la línia ${l}: ${ds.length} trens van amb ${Math.min(...ds)} min de retard o més`, lins:new Set([l]), greu:false}); });
+  return [...out.values()];
+}
+function pintarTick(){
+  const el=$('tick'), v=avisosGreus();
+  const firma=v.map(x=>x.txt).join('|'); let amagat=''; try{ amagat=sessionStorage.getItem('tev-tick')||''; }catch(e){}
+  if(!v.length || amagat===firma){ el.hidden=true; document.body.classList.remove('hastick'); return; }
+  if(el.dataset.f!==firma){ el.dataset.f=firma;
+    const html=v.map(x=>`<span>${x.lins.size?`<b>${esc([...x.lins].slice(0,4).join(' · '))}</b> — `:''}${esc(x.txt)}</span>`).join('');
+    $('tickT').innerHTML=html+html;   // dues còpies: la cinta no fa salt en tornar a començar
+    const llarg=$('tickT').scrollWidth/2; $('tickT').style.setProperty('--dur', Math.max(12, llarg/55)+'s');
+    $('tickList').innerHTML=v.map(x=>`<li>${esc(x.txt)}${x.lins.size?`<small>${esc([...x.lins].join(' · '))}</small>`:''}${x.desc&&x.desc!==x.txt?`<small>${esc(x.desc)}</small>`:''}</li>`).join(''); }
+  el.classList.toggle('w', !v.some(x=>x.greu));
+  el.hidden=false; document.body.classList.add('hastick');
+}
+$('tick').addEventListener('click',e=>{ if(e.target.closest('#tickX')){ e.stopPropagation(); try{ sessionStorage.setItem('tev-tick', $('tick').dataset.f||''); }catch(err){} pintarTick(); return; } $('tickPop').hidden=false; });
+$('tickPop').addEventListener('click',e=>{ if(e.target.id==='tickPop'||e.target.id==='tickOk') $('tickPop').hidden=true; });
 function pintarTodo(){
-  pintarChips(); pintarTrenes(); pintarStats(); actualitzarBadge(); try{ pintarMeu(); }catch(e){}
+  pintarChips(); pintarTrenes(); pintarStats(); actualitzarBadge(); try{ pintarMeu(); }catch(e){} try{ pintarTick(); }catch(e){}
   if(S.hidden.size) aplicarVies();
   if(S.mode==='late') pintarLista();
   if(S.sel){ if(S.trains.some(t=>t.id===S.sel)){ refrescarTarjeta(); const t=S.trains.find(x=>x.id===S.sel); if(S.follow && !S.motion[t.id]) map.panTo(t.pos,{animate:true}); } else cerrar(); }
