@@ -548,7 +548,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 49</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 2/11 · 50</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1456,6 +1456,10 @@ map.on('popupclose',()=>{ popCode=null; });
 const esFav = code => S.favs.includes(code);
 /* Estadístiques: compta accions (només el nom de l'acció, res de la persona) */
 function compta(nom){ try{ const f=()=>window.goatcounter?.count?.({path:'accio/'+nom, title:nom, event:true}); if(window.goatcounter?.count) f(); else setTimeout(f,3000); }catch(e){} }
+// tocar 5 cops la versió: no comptar les visites d'aquest dispositiu (també dins l'app instal·lada, que no té barra d'adreces)
+(()=>{ let n=0, t=0; document.addEventListener('click',e=>{ if(!e.target.closest('#versio')) return; const ara=Date.now(); n = ara-t<800 ? n+1 : 1; t=ara;
+  if(n>=5){ n=0; let off; try{ off=localStorage.getItem('skipgc')==='t'; if(off) localStorage.removeItem('skipgc'); else localStorage.setItem('skipgc','t'); }catch(err){ return; }
+    alert(off ? 'Estadístiques: aquest dispositiu TORNA a comptar.' : 'Estadístiques: aquest dispositiu ja NO compta.'); } }); })();
 try{ if(matchMedia('(display-mode: standalone)').matches || navigator.standalone) compta('obert-com-app'); }catch(e){}
 function toggleFav(code){
   if(esFav(code)) S.favs=S.favs.filter(c=>c!==code); else { S.favs.push(code); compta('preferida-afegida'); }
