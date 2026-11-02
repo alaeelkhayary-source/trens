@@ -38,7 +38,7 @@ function temaVol(){var t=null;try{t=localStorage.getItem('tev-tema');}catch(e){}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="mapagl.js?v=3"></script>
+<script src="mapagl.js?v=4"></script>
 <style>
 :root{
   --bg:#f4f5f7; --panel:#ffffff; --card:#f6f7f9; --line:#e6e9ee; --track:#d3d9e0;
@@ -98,6 +98,8 @@ b,strong{font-weight:600}
 @keyframes tpulse{0%{transform:scale(.6);opacity:.45}100%{transform:scale(2.6);opacity:0}}
 .tw.sel .tpill{transform:scale(1.18);box-shadow:0 0 0 4px rgba(20,23,26,.85),0 6px 16px rgba(0,0,0,.3)}
 #map.lejos .tpill{height:24px;padding:0 8px;font-size:12px}
+#map.z10 .tw:not(.sel) .tpill{height:16px;min-width:16px;width:16px;padding:0;font-size:0;border-width:2px;gap:0;justify-content:center}
+#map.z10 .tw:not(.sel) .tpill .td{display:none}
 .leaflet-marker-pane .tm{z-index:auto}
 .city{white-space:nowrap;pointer-events:none;font-family:var(--sans);color:#98a1ab;transform:translate(-50%,-50%);text-shadow:0 0 3px var(--bg),0 0 6px var(--bg);font-weight:400}
 .city.c1{font-size:13px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:#7d8793}
@@ -513,7 +515,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 36</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 37</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -575,7 +577,7 @@ const nom = id => S.stops[parentOf(id)]?.name || S.stops[id]?.name || id || '—
 const hm = ms => new Date(ms).toLocaleTimeString('ca-ES',{hour:'2-digit',minute:'2-digit',timeZone:'Europe/Madrid'});
 const hms = ms => new Date(ms).toLocaleTimeString('ca-ES',{timeZone:'Europe/Madrid'});
 const tSec = s => { const [h,m,x]=s.split(':').map(Number); return h*3600+m*60+(x||0); };
-const colorOf = l => COL[l] || '#8696a5';
+const colorOf = l => COL[l] || COL[String(l).replace(/^([A-Z]+\d)\d+$/,'$1')] || (/^M\d$/.test(l) && COL.MM) || '#8696a5';   // R61 → color de la R6, M1/M2 → cremallera
 const cls = d => d==null ? 'ok' : d>=10 ? 'b' : d>=3 ? 'w' : 'ok';
 const fmtD = d => d==null ? '' : d>0 ? '+'+d : d<0 ? String(d) : '';
 async function J(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status+' '+url); return r.json(); }
@@ -691,6 +693,14 @@ map.on('rotate rotateend moveend',()=>{ const b=map.getBearing(), el=$('nordBtn'
 $('zin').onclick=()=>map.zoomIn(); $('zout').onclick=()=>map.zoomOut();
 $('zfit').onclick=()=>encuadrar();
 let limites=null;
+function vistaInicial(){
+  // al mòbil no es veu bé tota la xarxa: s'obre a les teves estacions preferides o a Barcelona i el Vallès
+  if(window.innerWidth>900) return encuadrar();
+  const fs=(S.favs||[]).map(c=>S.stops[c]).filter(s=>s&&isFinite(s.lat));
+  const b=fs.length ? L.latLngBounds(fs.map(s=>[s.lat,s.lon])).pad(fs.length>1?.25:0) : L.latLngBounds([[41.375,2.03],[41.565,2.17]]);
+  if(fs.length===1){ map.setView([fs[0].lat,fs[0].lon],13,{animate:false}); return; }
+  map.fitBounds(b,{paddingTopLeft:[20,150],paddingBottomRight:[20,130],maxZoom:14,animate:false});
+}
 function encuadrar(){ if(limites) map.fitBounds(limites,{paddingTopLeft:[40,150],paddingBottomRight:[40,130]}); }
 function zoomCls(){ const z=map.getZoom(), el=$('map'); el.classList.toggle('lejos', z<12); el.classList.toggle('z11', z<=11); el.classList.toggle('z10', z<=10); el.classList.toggle('z9', z<=9); pintarEstaciones(true); }
 map.on('zoomend', zoomCls);
@@ -912,7 +922,7 @@ async function cargarBase(){
   const tmp=new Map();
   shapesTxt.split('\n').slice(1).forEach(l=>{ const c=l.split(','); if(c.length<4) return; let a=tmp.get(c[0]); if(!a){a=[];tmp.set(c[0],a);} a.push([+c[3],+c[1],+c[2]]); });
   tmp.forEach((a,id)=>{ a.sort((x,y)=>x[0]-y[0]); if(a.length>1) S.shapes.set(id, prepararShape(a.map(x=>[x[1],x[2]]))); });
-  csv(routesTxt).forEach(r=>{ if(r.route_color) COL[r.route_short_name||r.route_id]='#'+r.route_color; });
+  S.routeNom={}; csv(routesTxt).forEach(r=>{ S.routeNom[r.route_id]=r.route_short_name||r.route_id; if(r.route_color) COL[r.route_short_name||r.route_id]='#'+r.route_color; });
   csv(stopsTxt).forEach(s=>{
     S.stops[s.stop_id]={name:s.stop_name, lat:+s.stop_lat, lon:+s.stop_lon, parent:s.parent_station||(s.location_type==='1'?s.stop_id:null), wc:+(s.wheelchair_boarding||0), andana:s.platform_code||'', tipo:s.location_type};
     if(s.location_type==='1' && +s.stop_lon>LON_LLEIDA) S.parents.push(s.stop_id);
@@ -938,6 +948,13 @@ async function cargarHorarios(){
     a.push({stop:c[iS], arr:tSec(c[iA]), dep:tSec(c[iD]), seq:+c[iQ]});
   }
   S.sched.forEach(a=>a.sort((x,y)=>x.seq-y.seq));
+  // tots els viatges (línia, destinació i traçat) d'un cop, desats 12 h: no cal preguntar a FGC tren per tren
+  try{
+    const tt=await desat('f:trips.txt', async()=>T(await urlGTFS('trips.txt')));
+    const ls=tt.split('\n'), hh=ls[0].replace(/\r/,'').split(','); const iT=hh.indexOf('trip_id'), iR=hh.indexOf('route_id'), iH=hh.indexOf('trip_headsign'), iSh=hh.indexOf('shape_id');
+    for(let k=1;k<ls.length;k++){ const c=ls[k].replace(/\r/,'').split(','); if(c.length<3 || S.trips.get(c[iT])) continue;
+      S.trips.set(c[iT],{route:(S.routeNom&&S.routeNom[c[iR]])||c[iR], headsign:iH>=0?c[iH].replace(/^"|"$/g,''):'', shape:iSh>=0?c[iSh]:null}); }
+  }catch(e){ console.warn('trips.txt', e); }
   // índex: estació + hora de sortida -> viatges d'avui
   S.idxSal=new Map();
   S.sched.forEach((a,tid)=>{
@@ -1256,8 +1273,16 @@ async function salidasEstacion(code){
     salidas.push({tripId, lin:(tren?.lin||info?.route||'?'), dest:info?.headsign||nom(par[par.length-1].stop), prog:p.progD, est:p.estD, real:true});
     vistos.add((info?.route||'')+'|'+p.progD);
   });
-  // 2) Resto de servicios de hoy según el horario (sin tiempo real todavía)
-  try{
+  // 2) Resta de serveis d'avui segons l'horari complet (ja descarregat); si encara no hi és, es pregunta a FGC
+  if(S.horarios && S.cal){
+    const vistTid=new Set(salidas.map(s=>s.tripId));
+    sortidesProgramades(code, todayStr(), Math.max(0, secAra()-30), 40).forEach(x=>{
+      if(vistTid.has(x.tid) || x.prog<ahora-30000 || x.prog>ahora+3*3600e3) return;
+      const info=S.trips.get(x.tid), a=S.sched.get(x.tid);
+      const lin=info?.route||'?'; if(vistos.has(lin+'|'+x.prog)) return;
+      salidas.push({tripId:x.tid, lin, dest:info?.headsign||nom(a[a.length-1].stop), prog:x.prog, est:null, real:false});
+    });
+  } else try{
     if(!S.hoy[code]){
       const where=encodeURIComponent(`parent_station="${code}"`);
       S.hoy[code]=await J(`${BASE}/viajes-de-hoy/exports/json?select=route_short_name,trip_headsign,departure_time,date&where=${where}`);
@@ -1671,7 +1696,7 @@ function cercarEstacions(q){
     const minim = toks.length<=1 ? 1 : Math.min(4, toks.length);   // amb diverses paraules, n'han de coincidir com a mínim 2
     if(sc>=300 || ok>=minim) res.push({c, sc});
   });
-  return res.sort((a,b)=>b.sc-a.sc || S.stops[a.c].name.localeCompare(S.stops[b.c].name,'ca')).slice(0,8).map(x=>x.c);
+  return res.sort((a,b)=>b.sc-a.sc || lineasEstacion(b.c).length-lineasEstacion(a.c).length || S.stops[a.c].name.localeCompare(S.stops[b.c].name,'ca')).slice(0,8).map(x=>x.c);
 }
 function pintarSugg(){
   const q=$('search').value, box=$('sugg');
@@ -1992,7 +2017,7 @@ $('locBtn').onclick=()=>{
 S.vi=(()=>{ try{ return JSON.parse(localStorage.getItem('tev-viatge'))||{}; }catch(e){ return {}; } })();
 var viCamp=null, viOpts=[], viSel=-1;
 const desaVi=()=>{ try{ localStorage.setItem('tev-viatge', JSON.stringify({o:S.vi.o, d:S.vi.d})); }catch(e){} };
-const secAra=()=>{ const p=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Madrid',hourCycle:'h23'}).split(':').map(Number); return p[0]*3600+p[1]*60+p[2]; };
+function secAra(){ const p=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Madrid',hourCycle:'h23'}).split(':').map(Number); return p[0]*3600+p[1]*60+p[2]; }
 function omplirVi(){ $('viO').value=S.vi.o?S.stops[S.vi.o]?.name||'':''; $('viD').value=S.vi.d?S.stops[S.vi.d]?.name||'':''; }
 function suggVi(inp){
   viCamp=inp; const q=$(inp).value, box=$('viSugg'); box.classList.toggle('o', inp==='viD');
@@ -2134,7 +2159,7 @@ async function ciclo(forcar){
   try{
     await Promise.all([cargarBase(), cargarLineas()]);
     $('loadTxt').textContent='Posició dels trens…';
-    aplicarVies(); pintarEstaciones(); zoomCls(); encuadrar();
+    aplicarVies(); pintarEstaciones(); zoomCls(); vistaInicial();
     await ciclo(true);
     // Los retrasos exactos aparecen en cuanto llega el horario
     cargarHorarios().then(()=>{ if(S.mode==='viatge') pintarViatge(); return ciclo(); }).catch(e=>console.warn('Sin horario', e));

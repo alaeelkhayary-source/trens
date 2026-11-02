@@ -186,7 +186,7 @@ Line.prototype=Object.assign(Object.create(Base),{
   getBounds(){ const b=new Bounds(); const walk=a=>{ if(typeof a[0]==='number') b.extend([a[1],a[0]]); else a.forEach(walk); }; walk(this._coords.coordinates); return b; },
   eachLayer(fn){ fn(this); return this; }, getLayers(){ return [this]; },
   _feature(){ const o=this.options; return {type:'Feature', geometry:this._coords,
-    properties:{k:'l', fid:this._fid, z:this._z, c:o.color, w:o.weight, o:o.opacity, dash:o.dashArray?1:0}}; }
+    properties:{k:'l', fid:this._fid, z:-o.weight*1e6+this._z, c:o.color, w:o.weight, o:o.opacity, dash:o.dashArray?1:0}}; }
 });
 
 /* Cercle de mida fixa en píxels (estacions) */
@@ -270,7 +270,9 @@ Popup.prototype={
 
 /* ---------- Control de crèdits ---------- */
 function Attribution(o){ this.o=o||{}; }
-Attribution.prototype.addTo=function(map){ map.ml.addControl(new ml.AttributionControl({compact:true}), 'bottom-left'); return this; };
+Attribution.prototype.addTo=function(map){ const c=new ml.AttributionControl({compact:true}); map.ml.addControl(c, 'bottom-left');
+  const plega=()=>{ const el=map._el.querySelector('.maplibregl-ctrl-attrib'); if(el){ el.classList.remove('maplibregl-compact-show'); el.removeAttribute('open'); } };
+  map.ml.once('load',()=>setTimeout(plega,50)); map.ml.on('styledata',()=>setTimeout(plega,50)); return this; };
 
 window.L = {
   map:(id,o)=>new MapW(id,o||{}),
