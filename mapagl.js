@@ -233,7 +233,7 @@ Marker.prototype=Object.assign(Object.create(Ev),{
     this._off=[sz[0]/2-an[0], sz[1]/2-an[1]];
     if(this._m) this._m.setOffset(this._off); },
   addTo(t){ if(t instanceof MapW){ this._attach({_map:t}); } else if(t instanceof Group){ t.addLayer(this); } return this; },
-  _attach(g){ this._map=g._map; if(!this._m) this._m=new ml.Marker({element:this._el, anchor:'center', offset:this._off||[0,0]}); this._m.setLngLat([this._ll.lng,this._ll.lat]).addTo(this._map.ml); },
+  _attach(g){ this._map=g._map; if(!this._m) this._m=new ml.Marker({element:this._el, anchor:'center', offset:this._off||[0,0], subpixelPositioning:true}); this._m.setLngLat([this._ll.lng,this._ll.lat]).addTo(this._map.ml); },
   _detach(){ if(this._m) this._m.remove(); this._map=null; },
   remove(){ if(this._group) this._group.removeLayer(this); else this._detach(); return this; },
   getLatLng(){ return this._ll; },
