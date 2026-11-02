@@ -1,0 +1,13 @@
+# Servidor d'avisos de Trens en viu (Cloudflare Workers, pla gratuït)
+name = "trensenviu-avisos"
+main = "src/index.js"
+compatibility_date = "2025-10-01"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "AVISOS"
+class_name = "Avisos"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Avisos"]

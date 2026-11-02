@@ -36,8 +36,9 @@ function temaVol(){var t=null;try{t=localStorage.getItem('tev-tema');}catch(e){}
 <meta name="twitter:image" content="https://trensenviu.cat/og.png?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="i18n.js?v=1"></script>
+<link rel="stylesheet" href="vendor/maplibre-gl-4.7.1/maplibre-gl.css">
+<script src="vendor/maplibre-gl-4.7.1/maplibre-gl.js"></script>
 <script src="mapagl.js?v=8"></script>
 <style>
 :root{
@@ -335,7 +336,8 @@ html.dark .stops li.meu{background:#3a2f12;color:#ffd666}
 .avbox .avact button{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:#fff;font:600 14px var(--sans);cursor:pointer}
 .avbox .avact .ok{background:var(--text);color:#fff;border-color:var(--text)}
 .avbox .avact .del{color:var(--bad)}
-.avbox .avnote{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.4}
+.avbox .avprova{display:block;margin:8px auto 0;padding:6px 10px;border:none;background:none;color:var(--muted);font:600 12px var(--sans);text-decoration:underline;cursor:pointer}
+.avnote{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.4}
 .avmsg{position:fixed;left:50%;top:84px;transform:translateX(-50%);z-index:1100;background:var(--text);color:#fff;padding:10px 16px;border-radius:999px;font:500 13px var(--sans);box-shadow:0 6px 20px rgba(0,0,0,.2);display:none;max-width:90vw;text-align:center}
 .item:hover{background:var(--card)}
 .big{font:600 18px var(--sans);text-align:center;font-variant-numeric:tabular-nums;color:var(--warn)}
@@ -376,6 +378,7 @@ html.dark .stops li.meu{background:#3a2f12;color:#ffd666}
   .instbtn{flex:none}
   .hcard h1{font-size:16px;white-space:nowrap}
   .live{font-size:12px} #ago{display:none}
+  .hcard{gap:8px} .hcard .temabtn{width:30px;height:30px}
   .hstats{display:none}
   .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:4px;margin:0 -10px;padding-left:10px;padding-right:10px}
   .chips::-webkit-scrollbar{display:none}
@@ -498,13 +501,14 @@ html.dark .favbtn.on,html.dark .stops li.here,html.dark .bell.on{background:#3a2
 html.dark .avsheet{background:rgba(0,0,0,.5)}
 html.dark .loading{background:var(--bg);color:var(--text)}
 html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
+.langbtn{font:700 11px var(--sans);letter-spacing:.3px}
 .temabtn{flex:none;width:32px;height:32px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
 </style>
 <!-- Estadístiques privades (GoatCounter): sense galetes ni dades personals -->
 <script data-goatcounter="https://alae.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
 </head>
 <body>
-<div class="tickpop" id="tickPop" hidden><div><h3>⚠ Avisos importants</h3><ul id="tickList"></ul><button id="tickOk">D'acord</button></div></div>
+<div class="tickpop" id="tickPop" hidden><div><h3>⚠ Avisos importants</h3><ul id="tickList" class="noi18n"></ul><button id="tickOk">D'acord</button></div></div>
 <div class="loading" id="loading"><div>Carregant la xarxa d'FGC…</div><div class="bar"><i></i></div><div id="loadTxt" style="font-size:12px"></div></div>
 <div class="app">
   <div class="mapwrap" style="position:absolute;inset:0">
@@ -515,6 +519,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
         <div class="live"><span class="dot load" id="dot"></span><span class="clock" id="clock"></span><span id="liveTxt">Connectant…</span><span id="ago"></span></div>
         <button class="instbtn" id="instBtn" aria-label="Instal·lar com a app"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Instal·lar app</span></button>
         <button class="temabtn" id="temaBtn" aria-label="Tema" title="Tema">🌗</button>
+        <button class="temabtn langbtn noi18n" id="langBtn" aria-label="Idioma · Idioma · Language" title="Català · Castellano · English">CA</button>
         <a class="donbtn" id="donHead" href="#" target="_blank" rel="noopener" style="display:none" aria-label="Fer una donació">☕<span> Donar</span></a>
         <div class="hstats"><span><b id="sTotal">–</b> trens</span><span><b id="sLate">–</b> amb retard</span><span>mitjana <b id="sMed">–</b></span></div>
       </div>
@@ -525,7 +530,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <button class="locbtn" id="locBtn" aria-label="Estació més propera" title="Estació més propera"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" class="f"/></svg></button>
     <div class="zoom"><button id="zin" aria-label="Apropar">+</button><button id="zout" aria-label="Allunyar">−</button><button id="zfit" aria-label="Veure tota la xarxa" style="font-size:14px">⤢</button></div>
     <div class="card" id="card"></div>
-    <div class="tick" id="tick" hidden role="button" aria-label="Avisos importants d'FGC"><span class="tl">⚠ Avís</span><span class="tv"><span class="tt" id="tickT"></span></span><button class="tx" id="tickX" aria-label="Amagar">×</button></div>
+    <div class="tick" id="tick" hidden role="button" aria-label="Avisos importants d'FGC"><span class="tl">⚠ Avís</span><span class="tv"><span class="tt noi18n" id="tickT"></span></span><button class="tx" id="tickX" aria-label="Amagar">×</button></div>
   </div>
   <aside>
     <header>
@@ -573,7 +578,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 53</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 54</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -591,11 +596,14 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
   <label><input type="checkbox" id="avRet" checked> També si porta retard (3 min o més)</label>
   <div class="avact"><button id="avDel" class="del" style="display:none">Treure avís</button><button id="avNo">Cancel·lar</button><button id="avOk" class="ok">Activar avís</button></div>
   <div class="avnote" id="avNote">Rebràs l'avís mentre tinguis la web oberta (també en segon pla). A l'iPhone, cal tenir-la instal·lada a la pantalla d'inici.</div>
+  <button class="avprova" id="avProva" type="button" hidden>Envia'm una notificació de prova</button>
 </div></div><div class="avmsg" id="avMsg"></div>
 <nav class="tabbar" id="tabbar"><button data-tab="mapa" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Mapa</span></button><button data-tab="favs"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Preferides</span></button><button data-tab="station"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-3M15 21l2-3"/></svg><span>Trens</span></button><button data-tab="viatge"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H15a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.5"/></svg><span>Viatge</span></button></nav>
 <script>
 /* ================= CONFIG ================= */
 const BASE = 'https://dadesobertes.fgc.cat/api/explore/v2.1/catalog/datasets';
+// Servidor d'avisos (Cloudflare). Buit = els avisos només funcionen amb la web oberta.
+const PUSH_API = '';
 const REFRESH = 20000;  // es pregunta a FGC cada 20 s (FGC actualitza les posicions ~1 cop per minut); els trens es mouen sols entre consultes
 const XARXA = {
   BV:['L6','L7','L12','S1','S2','S5','S6','S7'],
@@ -729,7 +737,7 @@ function parseAlerts(buf){
   all(feed,2).forEach(eb=>{
     const e=pb(eb); const ab=get(e,5); if(!ab) return;
     const a=pb(ab);
-    const tr=f=>{ const b=get(a,f); if(!b) return ''; const ts=all(pb(b),1).map(x=>pb(x)); const ca=ts.find(t=>get(t,2)&&str(get(t,2))==='ca')||ts.find(t=>get(t,2)&&str(get(t,2))==='es')||ts[0]; return ca&&get(ca,1)?str(get(ca,1)):''; };
+    const tr=f=>{ const b=get(a,f); if(!b) return ''; const ts=all(pb(b),1).map(x=>pb(x)); const ca=ts.find(t=>get(t,2)&&str(get(t,2))===LANG())||ts.find(t=>get(t,2)&&str(get(t,2))===(LANG()==='en'?'en':'ca'))||ts.find(t=>get(t,2)&&str(get(t,2))==='es')||ts[0]; return ca&&get(ca,1)?str(get(ca,1)):''; };
     const ents=all(a,5).map(x=>{ const m=pb(x); const t=get(m,4); return {route:get(m,2)?str(get(m,2)):null, stop:get(m,5)?str(get(m,5)):null, trip:t&&get(pb(t),1)?str(get(pb(t),1)):null}; });
     const per=all(a,1).map(x=>{const m=pb(x); return {start:(get(m,1)||0)*1000, end:(get(m,2)||0)*1000};});
     out.push({id:get(e,1)?str(get(e,1)):'', header:tr(10), desc:tr(11), effect:get(a,7), ents, per});
@@ -1295,7 +1303,7 @@ function destinoTren(t){ return t.headsign || nom(t.desti); }
 function dondeTren(t){
   if(t.parado) return 'A '+nom(t.parado);
   const sig=t.par?.[t.sigIdx]?.stop || t.prox[0];
-  if(t.previo && sig) return `Entre ${nom(t.previo)} i ${nom(sig)}`;
+  if(t.previo && sig) return `Entre ${nom(t.previo)} ${({es:'y',en:'and'})[LANG()]||'i'} ${nom(sig)}`;
   return sig ? 'Cap a '+nom(sig) : '';
 }
 
@@ -1519,6 +1527,8 @@ map.on('popupclose',()=>{ popCode=null; });
 
 /* ===== Estacions preferides (es guarden en aquest dispositiu) ===== */
 const esFav = code => S.favs.includes(code);
+// idioma: CA → ES → EN
+(()=>{ const b=$('langBtn'); if(!b) return; b.textContent=LANG().toUpperCase(); b.onclick=()=>{ const i=IDIOMES.indexOf(LANG()); canviaIdioma(IDIOMES[(i+1)%IDIOMES.length]); }; })();
 /* Estadístiques: compta accions (només el nom de l'acció, res de la persona) */
 function compta(nom){ try{ const f=()=>window.goatcounter?.count?.({path:'accio/'+nom, title:nom, event:true}); if(window.goatcounter?.count) f(); else setTimeout(f,3000); }catch(e){} }
 // tocar 5 cops la versió: no comptar les visites d'aquest dispositiu (també dins l'app instal·lada, que no té barra d'adreces)
@@ -1778,7 +1788,7 @@ function pintarAvisos(){
   // Se agrupan los avisos repetidos (mismo texto)
   const grupos={}; activos.forEach(a=>{ const k=a.header.trim(); (grupos[k]=grupos[k]||{a,routes:new Set(),n:0}); grupos[k].n++; a.ents.forEach(e=>{ if(e.route) grupos[k].routes.add(e.route); if(e.stop) grupos[k].routes.add(nom(e.stop)); }); });
   const lista=Object.values(grupos).sort((x,y)=>(x.a.id.startsWith('OBSERVATIONS')?1:0)-(y.a.id.startsWith('OBSERVATIONS')?1:0));
-  box.innerHTML = lista.length ? `<ul>${lista.slice(0,12).map(g=>`<li>${esc(g.a.header)}<small>${[...g.routes].slice(0,4).map(esc).join(' · ')}${g.n>1?` · ${g.n} serveis`:''}</small></li>`).join('')}</ul>` : '<p>Ara mateix no hi ha incidències a la xarxa.</p>';
+  box.innerHTML = lista.length ? `<ul>${lista.slice(0,12).map(g=>`<li><span class="noi18n">${esc(g.a.header)}</span><small>${[...g.routes].slice(0,4).map(esc).join(' · ')}${g.n>1?` · ${g.n} serveis`:''}</small></li>`).join('')}</ul>` : '<p>Ara mateix no hi ha incidències a la xarxa.</p>';
 }
 
 /* ===== Panell d'avisos importants (cinta que passa a baix, com a la tele) =====
@@ -1788,7 +1798,7 @@ const GREU=/suprimi|cancel|interromp|tallad|tall de|sense servei|no hi ha servei
 const AVIS_PROVA='Missatge de prova: aquesta és la cinta d\'avisos importants de Trens en viu';
 function avisosGreus(){
   const ara=Date.now(), out=new Map();
-  if(AVIS_PROVA) out.set('prova',{txt:AVIS_PROVA, lins:new Set(['PROVA']), greu:true});
+  if(AVIS_PROVA) out.set('prova',{txt:tr(AVIS_PROVA), lins:new Set([tr('PROVA')]), greu:true});
   (S.alerts||[]).forEach(a=>{ if(!a.header) return;
     if(a.per.length && !a.per.some(p=>(!p.start||p.start<=ara)&&(!p.end||p.end>=ara))) return;
     const obs=a.id.startsWith('OBSERVATIONS'), efecte=[1,2,3,4,6,9].includes(a.effect);
@@ -1797,7 +1807,7 @@ function avisosGreus(){
     a.ents.forEach(e=>{ if(e.route) o.lins.add(e.route); }); out.set(k,o); });
   // retards forts calculats per nosaltres: una línia amb 2 o més trens a 15 min o més
   const per={}; (S.trains||[]).forEach(t=>{ const d=retrasoTren(t); if(d!=null && d>=15){ (per[t.lin]=per[t.lin]||[]).push(d); } });
-  Object.entries(per).forEach(([l,ds])=>{ if(ds.length>=2) out.set('ret|'+l,{txt:`Retards importants a la línia ${l}: ${ds.length} trens van amb ${Math.min(...ds)} min de retard o més`, lins:new Set([l]), greu:false}); });
+  Object.entries(per).forEach(([l,ds])=>{ if(ds.length>=2) out.set('ret|'+l,{txt:tr(`Retards importants a la línia ${l}: ${ds.length} trens van amb ${Math.min(...ds)} min de retard o més`), lins:new Set([l]), greu:false}); });
   return [...out.values()];
 }
 function pintarTick(){
@@ -1942,7 +1952,7 @@ const DON_ESPERA = 30000;
 /* ===== Trens futurs: triar una hora (avui o demà) a la pestanya Estació ===== */
 S.quan=null;   // null = ara; si no {dia:0|1, sec}
 const dataDia = off => new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Madrid'}).format(new Date(Date.now()+off*864e5)).replace(/-/g,'');
-const nomDia = d => { if(d===dataDia(0)) return 'Avui'; if(d===dataDia(1)) return 'Demà'; const x=new Date(Date.UTC(+d.slice(0,4),+d.slice(4,6)-1,+d.slice(6,8),12)); return x.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'numeric',timeZone:'UTC'}); };
+const nomDia = d => { if(d===dataDia(0)) return 'Avui'; if(d===dataDia(1)) return 'Demà'; const x=new Date(Date.UTC(+d.slice(0,4),+d.slice(4,6)-1,+d.slice(6,8),12)); return x.toLocaleDateString(locale(),{weekday:'long',day:'numeric',month:'numeric',timeZone:'UTC'}); };
 const diaAnterior = d => { const x=new Date(Date.UTC(+d.slice(0,4),+d.slice(4,6)-1,+d.slice(6,8),12)-864e5); return x.toISOString().slice(0,10).replace(/-/g,''); };
 const offDe = d => Math.round((Date.UTC(+d.slice(0,4),+d.slice(4,6)-1,+d.slice(6,8))-Date.UTC(+dataDia(0).slice(0,4),+dataDia(0).slice(4,6)-1,+dataDia(0).slice(6,8)))/864e5);
 const ara5 = () => { const p=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Madrid',hourCycle:'h23'}).split(':').map(Number); return Math.ceil((p[0]*3600+p[1]*60)/300)*300; };
@@ -2080,7 +2090,8 @@ function obrirAvis(tid, code, data){
   $('avDel').style.display=ex?'':'none'; $('avOk').textContent=ex?'Desar':'Activar avís';
   const ios=/iPhone|iPad/.test(navigator.userAgent), inst=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
   $('avNote').textContent = !('Notification' in window) ? (ios&&!inst ? "A l'iPhone, per rebre avisos has d'instal·lar la web: botó Compartir → «Afegir a la pantalla d'inici», i obrir-la des d'allà." : "Aquest navegador no permet notificacions. T'avisarem amb un missatge dins la web.")
-    : "Rebràs l'avís mentre tinguis la web oberta (també en segon pla).";
+    : pushPossible() ? "Rebràs l'avís encara que tanquis la web." : "Rebràs l'avís mentre tinguis la web oberta (també en segon pla).";
+  $('avProva').hidden=!pushPossible();
   $('avSheet').classList.add('show');
 }
 const tancarAvis=()=>{ $('avSheet').classList.remove('show'); avSel=null; };
@@ -2088,7 +2099,7 @@ $('avOpts').addEventListener('click',e=>{ const b=e.target.closest('button'); if
 $('avMin').addEventListener('input',()=>{ const v=+$('avMin').value; const ok=v>=1; $('avMin').classList.toggle('on',ok); if(ok) $('avOpts').querySelectorAll('button').forEach(x=>x.classList.remove('on')); });
 $('avNo').onclick=tancarAvis;
 $('avSheet').addEventListener('click',e=>{ if(e.target.id==='avSheet') tancarAvis(); });
-$('avDel').onclick=()=>{ if(!avSel) return; S.avisos=S.avisos.filter(a=>!(a.tid===avSel.tid&&a.code===avSel.code)); desaAvisos(); tancarAvis(); refrescarVistesAvis(); avMsg('Avís tret'); };
+$('avDel').onclick=()=>{ if(!avSel) return; pushTreu(avSel); S.avisos=S.avisos.filter(a=>!(a.tid===avSel.tid&&a.code===avSel.code)); desaAvisos(); tancarAvis(); refrescarVistesAvis(); avMsg('Avís tret'); };
 $('avOk').onclick=async()=>{
   if(!avSel) return;
   const cm=Math.round(+$('avMin').value);
@@ -2096,7 +2107,9 @@ $('avOk').onclick=async()=>{
   if('Notification' in window && Notification.permission==='default'){ try{ await Notification.requestPermission(); }catch(e){} }
   S.avisos=S.avisos.filter(a=>!(a.tid===avSel.tid&&a.code===avSel.code));
   S.avisos.push({...avSel, min, ret, fetAbans:false, retAvisat:0});
+  const nou=S.avisos[S.avisos.length-1];
   desaAvisos(); tancarAvis(); refrescarVistesAvis();
+  pushDesa(nou).then(ok=>{ if(ok){ nou.push=true; desaAvisos(); } });
   avMsg(('Notification' in window && Notification.permission==='denied') ? "Avís desat, però les notificacions estan bloquejades: t'avisarem dins la web" : `🔔 T'avisarem ${min} min abans`);
   comprovarAvisos();
 };
@@ -2108,7 +2121,35 @@ document.addEventListener('click',e=>{
   e.preventDefault(); e.stopPropagation();
   obrirAvis(b.dataset.avis, b.dataset.acode, b.dataset.adata||null);
 },true);
+/* ===== Avisos amb la web tancada (Web Push a través del servidor d'avisos) ===== */
+const pushPossible = () => !!PUSH_API && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const b64aBytes = s => { s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); };
+async function pushSub(){
+  if(!pushPossible()) return null;
+  if(Notification.permission==='default'){ try{ await Notification.requestPermission(); }catch(e){} }
+  if(Notification.permission!=='granted') return null;
+  const reg=await navigator.serviceWorker.ready;
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub){ const {key}=await (await fetch(PUSH_API+'/vapid')).json(); sub=await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64aBytes(key)}); }
+  return sub.toJSON();
+}
+const idAvis = a => a.tid+'|'+a.code+'|'+a.data;
+async function pushDesa(a){
+  try{ const sub=await pushSub(); if(!sub) return false;
+    const stops=[a.code, ...Object.keys(S.stops).filter(s=>S.stops[s]?.parent===a.code)];
+    let est=null; try{ const p=paradasViaje(a.tid)?.find(x=>parentOf(x.stop)===a.code); if(p&&a.data===dataDia(0)) est=p.estD??null; }catch(e){}
+    const r=await fetch(PUSH_API+'/avis',{method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({sub, id:idAvis(a), tid:a.tid, stops, prog:a.prog, est, min:a.min, ret:a.ret, lin:a.lin, dest:a.dest, nom:nom(a.code), lang:LANG()})});
+    return r.ok;
+  }catch(e){ console.warn('push', e); return false; }
+}
+async function pushTreu(a){
+  try{ if(!pushPossible()) return; const reg=await navigator.serviceWorker.ready, sub=await reg.pushManager.getSubscription(); if(!sub) return;
+    await fetch(PUSH_API+'/treu',{method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({endpoint:sub.endpoint, id:idAvis(a)})}); }catch(e){}
+}
+$('avProva').onclick=async()=>{ const sub=await pushSub(); if(!sub){ avMsg('Has de permetre les notificacions'); return; }
+  try{ const r=await (await fetch(PUSH_API+'/prova',{method:'POST', headers:{'Content-Type':'text/plain'}, body:JSON.stringify({sub, lang:LANG()})})).json(); avMsg(r.ok?'Notificació de prova enviada':'No s\'ha pogut enviar'); }catch(e){ avMsg('No s\'ha pogut enviar'); } };
 async function notificar(titol, cos, tag){
+  titol=tr(titol); cos=tr(cos);
   avMsg(titol+' · '+cos);
   if(!('Notification' in window) || Notification.permission!=='granted') return;
   const opt={body:cos, tag, icon:'icons/icon-192.png', badge:'icons/icon-192.png', renotify:true};
@@ -2126,6 +2167,7 @@ async function comprovarAvisos(){
     const t=est??prog; if(!t) continue;
     const ret=est!=null?Math.round((est-prog)/60000):0;
     const nomE=nom(a.code), ttl=`🚆 ${a.lin} cap a ${a.dest}`;
+    if(a.push){ if(t<ara-10*60000){ a.fi=true; canvi=true; } continue; }   // ho avisa el servidor (encara que la web estigui tancada)
     if(a.ret && ret>=3 && ret>=a.retAvisat+2 && t>ara){
       a.retAvisat=ret; canvi=true;
       notificar(`⚠️ ${a.lin} porta +${ret} min de retard`, `Cap a ${a.dest}. Nova hora a ${nomE}: ${hm(t)}`, 'ret-'+a.tid);
