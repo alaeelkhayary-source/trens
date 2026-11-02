@@ -36,7 +36,7 @@ function temaVol(){var t=null;try{t=localStorage.getItem('tev-tema');}catch(e){}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-<script src="mapagl.js?v=1"></script>
+<script src="mapagl.js?v=2"></script>
 <style>
 :root{
   --bg:#f4f5f7; --panel:#ffffff; --card:#f6f7f9; --line:#e6e9ee; --track:#d3d9e0;
@@ -459,7 +459,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 28</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 29</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -770,7 +770,7 @@ function velocidadMov(id){
   const v=(sEn(mo,a+5000)-sEn(mo,a))/5*3.6; return v>1?Math.round(v):0;
 }
 let mapaMovent=false, ultimMov=0;
-map.on('movestart zoomstart',()=>{ mapaMovent=true; });
+map.on('movestart zoomstart',()=>{ if(!map._panning) mapaMovent=true; });
 map.on('moveend zoomend',()=>{ if(map._panning) return; mapaMovent=false; moverTrenes(true); });
 function moverTrenes(forcar){
   const ahora=Date.now();
@@ -1449,7 +1449,7 @@ function abrirTren(id, centrar){
   if(cambio) $('card').classList.remove('exp');
   if(S.selEst){ S.selEst=null; pintarEstaciones(); }
   S.selRuta=null;
-  S.sel=id; if(centrar){ S.follow=true; const m=S.markers[id]; map.panTo(m?m.getLatLng():t.pos); }
+  S.sel=id; if(centrar){ S.follow=true; const m=S.markers[id]; map.seguir(m?m.getLatLng():t.pos); }
   if(cambio) dibuixarTrajecte(id,false);
   refrescarTarjeta();
   if(cambio) pintarTrenes();
@@ -1485,7 +1485,8 @@ function refrescarTarjeta(){
   c.querySelector('.x').onclick=cerrar;
   c.scrollTop=scrollCard; const ol=c.querySelector('.reg ol'); if(ol) ol.scrollTop=scrollReg;
 }
-function cerrar(){ $('card').classList.remove('show','exp'); const habiaEst=!!S.selEst; S.sel=null; S.selEst=null; S.selRuta=null; S.follow=false; capaRuta.clearLayers(); pintarTrenes(); if(habiaEst) pintarEstaciones(); }
+function cerrar(){ if(S.follow||S.sel) map.alliberar();
+ $('card').classList.remove('show','exp'); const habiaEst=!!S.selEst; S.sel=null; S.selEst=null; S.selRuta=null; S.follow=false; capaRuta.clearLayers(); pintarTrenes(); if(habiaEst) pintarEstaciones(); }
 
 /* ===== Trajectòria d'un tren ===== */
 const capaRuta=L.layerGroup().addTo(map);
@@ -1612,6 +1613,8 @@ $('list').addEventListener('click',e=>{
 });
 document.addEventListener('click',e=>{ const pr=e.target.closest('.estpop .pr[data-id]'); if(pr) verTrajecte(pr.dataset.id, popCode); });
 map.on('dragstart',()=>{ S.follow=false; });
+// si toques o arrossegues el mapa mentre segueixes un tren, el deixes de seguir (i pots moure't lliurement)
+['mousedown','touchstart'].forEach(ev=>map.ml.getCanvas().addEventListener(ev,()=>{ S.follow=false; },{passive:true}));
 
 /* ================= ARRANQUE ================= */
 

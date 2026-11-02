@@ -99,6 +99,11 @@ Object.assign(MapW.prototype, Ev, {
   createPane(){ return {style:{}}; },
   invalidateSize(){ this.ml.resize(); return this; },
   getBearing(){ return this.ml.getBearing(); },
+  // seguir un tren: s'hi apropa i el deixa al centre de la part visible (sense la fitxa ni el panell)
+  seguir(ll){ const p=toLL(ll), mob=window.innerWidth<=900, H=window.innerHeight;
+    const pad = mob ? {top:110, bottom:Math.round(H*0.46), left:0, right:0} : {top:90, bottom:30, left:380, right:430};
+    this.ml.easeTo({center:[p.lng,p.lat], zoom:Math.max(this.ml.getZoom(), 14.3-DZ), padding:pad, duration:800}); },
+  alliberar(){ this.ml.easeTo({padding:{top:0,bottom:0,left:0,right:0}, duration:300}); },
   resetNorth(){ this.ml.easeTo({bearing:0, pitch:0, duration:400}); },
   setBaseStyle(url){ if(this._styleUrl===url) return; this._styleUrl=url; this._loaded=false; this.ml.setStyle(url,{diff:false}); },
   // capa implícita per a elements afegits directament al mapa
