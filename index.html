@@ -459,7 +459,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 26</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 27</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1850,7 +1850,12 @@ $('locBtn').onclick=()=>{
   if(!('geolocation' in navigator)){ avMsg('Aquest navegador no pot saber on ets'); return; }
   if(!window.isSecureContext){ avMsg("Per saber on ets cal la connexió segura (https)"); return; }
   b.classList.add('busy');
-  navigator.geolocation.getCurrentPosition(pos=>{
+  // 1r intent precís (GPS); si falla per temps o senyal, 2n intent amb la wifi i més temps
+  const demanar=(ok,ko)=>navigator.geolocation.getCurrentPosition(ok, err=>{
+    if(err.code===1) return ko(err);
+    navigator.geolocation.getCurrentPosition(ok, ko, {enableHighAccuracy:false, timeout:25000, maximumAge:600000});
+  }, {enableHighAccuracy:true, timeout:8000, maximumAge:60000});
+  demanar(pos=>{
     b.classList.remove('busy'); b.classList.add('on');
     const {latitude:la, longitude:lo, accuracy}=pos.coords; S.jo=[la,lo];
     const llista=S.parents.map(c=>({c, d:distM(la,lo,S.stops[c].lat,S.stops[c].lon)})).sort((x,y)=>x.d-y.d);
@@ -1866,8 +1871,11 @@ $('locBtn').onclick=()=>{
     setTimeout(()=>mostrarPopupEst(top.c,true), 450);
   }, err=>{
     b.classList.remove('busy');
-    avMsg(err.code===1 ? "Has de donar permís d'ubicació al navegador per trobar la teva estació" : "No s'ha pogut saber on ets. Torna-ho a provar");
-  }, {enableHighAccuracy:true, timeout:12000, maximumAge:60000});
+    const mac=/Macintosh/.test(navigator.userAgent) && !('ontouchend' in document);
+    avMsg(err.code===1 ? "Has de donar permís d'ubicació al navegador per trobar la teva estació"
+      : mac ? "El Mac no troba la ubicació. Comprova que la wifi estigui activada i que el Safari tingui permís a Configuració del Sistema → Privacitat → Localització"
+      : "No s'ha pogut saber on ets. Torna-ho a provar");
+  });
 };
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
