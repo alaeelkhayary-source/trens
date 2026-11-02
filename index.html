@@ -253,6 +253,22 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .vopt+.vopt{border-top:1px solid var(--line)}
 .vopt:hover{background:var(--card)}
 .vopt.on{background:var(--card);box-shadow:inset 3px 0 0 var(--text)}
+.vmeu{display:inline-block;margin-top:6px;font:700 12px var(--sans);color:#a57d1d}
+html.dark .vmeu{color:#ffd666}
+.meubar{pointer-events:auto;display:flex;align-items:center;gap:10px;margin-top:8px;max-width:520px;background:var(--panel);border-radius:14px;padding:9px 8px 9px 12px;box-shadow:var(--shadow);border:2px solid #f5b400;cursor:pointer}
+.meubar[hidden]{display:none}
+.meubar .mi{font-size:18px;line-height:1}
+.meubar .mt{flex:1;min-width:0}
+.meubar .mt b{display:block;font:700 14px var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meubar .mt small{display:block;font:500 12px var(--sans);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meubar .mx{flex:none;width:30px;height:30px;border-radius:999px;border:none;background:var(--card);color:var(--muted);font-size:17px;cursor:pointer}
+.tw.meu .tpill{box-shadow:0 0 0 3px #f5b400,0 2px 6px rgba(0,0,0,.35)}
+.tw.meu .tpill::after{content:'★';position:absolute;top:-9px;right:-7px;width:16px;height:16px;border-radius:999px;background:#f5b400;color:#fff;font-size:10px;line-height:16px;text-align:center}
+.tw.meu.mini .tpill::after,#map.z10 .tw.meu:not(.sel) .tpill::after{display:none}
+.meuban{margin:8px 0 4px;padding:9px 11px;border-radius:10px;background:#fff6dc;color:#6b4e00;font:600 13px var(--sans);line-height:1.4}
+html.dark .meuban{background:#3a2f12;color:#ffd666}
+.stops li.meu{background:#fff6dc;border-radius:6px;padding:3px 6px;margin:0 -6px;font-weight:700}
+html.dark .stops li.meu{background:#3a2f12;color:#ffd666}
 .vt{display:flex;align-items:baseline;gap:8px}
 .vt b{font:700 20px var(--sans);letter-spacing:-.3px}
 .vt .ar{color:var(--muted)}
@@ -471,6 +487,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
         <div class="hstats"><span><b id="sTotal">–</b> trens</span><span><b id="sLate">–</b> amb retard</span><span>mitjana <b id="sMed">–</b></span></div>
       </div>
       <div class="chips" id="chips"></div>
+      <div class="meubar" id="meuBar" hidden role="button" aria-label="El meu viatge"><span class="mi">★</span><span class="mt"><b id="meuTit"></b><small id="meuSub"></small></span><button class="mx" id="meuX" aria-label="Treure el meu viatge" title="Treure el meu viatge">×</button></div>
     </div>
     <button class="nordbtn" id="nordBtn" aria-label="Orientar al nord" title="Orientar al nord" hidden><svg viewBox="0 0 24 24"><path class="n" d="M12 1.5 6.5 12h11z"/><path d="M12 22.5 17.5 12h-11z"/></svg></button>
     <button class="locbtn" id="locBtn" aria-label="Estació més propera" title="Estació més propera"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" class="f"/></svg></button>
@@ -523,7 +540,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 43</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 44</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1202,12 +1219,12 @@ function pintarTrenes(){
     const d=retrasoTren(t), c=cls(d);
     const etiqueta = `${t.lin}${d!=null&&d!==0?` <span class="d">${fmtD(d)}</span>`:''}`;
     const col=colorOf(t.lin);
-    const html=`<div class="tw ${S.sel===t.id?'sel':''}" style="--c:${col}">
+    const html=`<div class="tw ${S.sel===t.id?'sel':''}${meuTids().has(t.id)?' meu':''}" style="--c:${col}">
       <div class="pulse"></div>
       <div class="tpill ${c}"><span class="tl">${esc(t.lin)}</span>${d!=null&&d!==0?`<span class="td">${fmtD(d)}′</span>`:''}</div></div>`;
     const icon=L.divIcon({className:'tm',html,iconSize:[0,0],iconAnchor:[0,0]});
     const m=S.markers[t.id];
-    if(m){ m.setIcon(icon); if(!S.motion[t.id]) animar(m,t.pos); m.setZIndexOffset(S.sel===t.id?1000:(c==='b'?500:c==='w'?300:0)); }
+    if(m){ m.setIcon(icon); if(!S.motion[t.id]) animar(m,t.pos); m.setZIndexOffset(S.sel===t.id?1000:meuTids().has(t.id)?800:(c==='b'?500:c==='w'?300:0)); }
     else S.markers[t.id]=L.marker(S.motion[t.id]?puntoEn(S.motion[t.id].sh, sEn(S.motion[t.id],Date.now())):t.pos,{icon}).on('click',()=>abrirTren(t.id,true)).addTo(capaTrenes);
   });
   Object.keys(S.markers).forEach(id=>{ if(!vivos.has(id)){ capaTrenes.removeLayer(S.markers[id]); delete S.markers[id]; } });
@@ -1220,7 +1237,7 @@ function desamuntegar(){
   const per=new Map(S.trains.map(t=>[t.id,t])), v=[];
   for(const id in S.markers){ const m=S.markers[id], el=m.getElement && m.getElement().querySelector('.tw'); if(!el) continue;
     const ll=m.getLatLng(), p=map.ml.project([ll.lng,ll.lat]); const t=per.get(id), d=t?retrasoTren(t):0;
-    v.push({el, x:p.x, y:p.y, pr: id===S.sel?1e9 : (d||0)*10 + (S.hidden.has(t?.lin)?-100:0)}); }
+    v.push({el, x:p.x, y:p.y, pr: id===S.sel?1e9 : meuTids().has(id)?1e8 : (d||0)*10 + (S.hidden.has(t?.lin)?-100:0)}); }
   v.sort((a,b)=>b.pr-a.pr); const fets=[];
   v.forEach(o=>{ const xoca=fets.some(f=>Math.abs(f.x-o.x)<58 && Math.abs(f.y-o.y)<26); o.el.classList.toggle('mini', xoca);
     const ext=o.el.closest('.lmk'); if(ext){ if(xoca){ ext.style.zIndex='1'; } else if(!ext.style.zIndex || ext.style.zIndex==='1'){ ext.style.zIndex='5'; } }   // els punts petits, sempre per sota de les etiquetes
@@ -1574,11 +1591,11 @@ function refrescarTarjeta(){
     <div class="row"><span>On és</span><span>${esc(dondeTren(t))}</span></div>
     ${sig&&!t.parado?`<div class="row"><span>Arriba a ${esc(nom(sig.stop))}</span><span>${hm(sig.est??sig.prog)}</span></div>`:''}
     ${fin?`<div class="row"><span>Arribada a ${esc(nom(fin.stop))}</span><span>${hm(fin.est??fin.prog)}</span></div>`:''}
-    ${avisos.length?`<div class="avis">⚠ ${avisos.map(esc).join('<br>⚠ ')}</div>`:''}`,`
+    ${avisos.length?`<div class="avis">⚠ ${avisos.map(esc).join('<br>⚠ ')}</div>`:''}${banMeu(id)}`,`
     ${fin?`<div class="row"><span>Arribada prevista (horari)</span><span>${hm(fin.prog)}</span></div>`:''}
     ${vel?`<div class="row"><span>Velocitat</span><span>≈ ${vel} km/h</span></div>`:''}
     ${t.ocup.length?`<div class="row"><span>Ocupació</span><span></span></div><div class="occ">${t.ocup.map(o=>`<div><i style="width:${Math.min(100,o)}%;background:${o>70?'var(--bad)':o>40?'var(--warn)':'var(--ok)'}"></i><b>${Math.round(o)}%</b></div>`).join('')}</div>`:''}
-    <ul class="stops">${prox.map(p=>{ const dd=p.est!=null?Math.round((p.est-p.prog)/60000):0; return `<li><span>${esc(nom(p.stop))}</span>${dd?`<s>${hm(p.prog)}</s>`:'<span></span>'}<b style="color:${dd>=10?'var(--bad)':dd>=3?'var(--warn)':'var(--text)'}">${hm(p.est??p.prog)}</b></li>`; }).join('')}</ul>
+    <ul class="stops">${prox.map(p=>{ const dd=p.est!=null?Math.round((p.est-p.prog)/60000):0, mk=marcaMeu(id,p.stop); return `<li class="${mk?'meu':''}"><span>${mk}${esc(nom(p.stop))}</span>${dd?`<s>${hm(p.prog)}</s>`:'<span></span>'}<b style="color:${dd>=10?'var(--bad)':dd>=3?'var(--warn)':'var(--text)'}">${hm(p.est??p.prog)}</b></li>`; }).join('')}</ul>
     <div class="reg"><h4><span>Registre de moviments</span><span>${(S.log[id]||[]).length}</span></h4>
       <ol>${(S.log[id]||[]).map(e=>`<li class="${e.tipo}${e.nuevo?' new':''}"><time>${hms(e.t)}</time><span>${esc(e.txt)}${e.tipo==='est'?' <small style="color:var(--dim)">(estimat)</small>':''}</span></li>`).join('')||'<li><time></time><span>Esperant moviments…</span></li>'}</ol></div>`,'Parades i detalls');
   (S.log[id]||[]).forEach(e=>e.nuevo=false);
@@ -1648,9 +1665,9 @@ function pintarTrajecte(){
     <div class="sub">${r.data?`${esc(nomDia(r.data))} · surt d'${esc(nom(ini.stop))} a les ${hm(surt)}`:falta>0?`Encara no ha sortit · surt d'${esc(nom(ini.stop))} en ${falta>=90?hm(surt):falta+' min ('+hm(surt)+')'}`:'Trajecte'} · ${real?'<span style="color:var(--ok)">temps real</span>':'segons horari'}</div>
     <div class="row"><span>Sortida</span><span>${hm(surt)}</span></div>
     <div class="row"><span>Arribada a ${esc(nom(fi.stop))}</span><span>${hm(fi.est??fi.prog)}</span></div>
-    <div class="row"><span>Parades</span><span>${par.length}</span></div>`,`
-    <ul class="stops">${par.map(p=>{ const dd=p.est!=null?Math.round((p.est-p.prog)/60000):0; const sel=r.est&&parentOf(p.stop)===r.est;
-      return `<li class="${sel?'here':''}"><span>${sel?'📍 ':''}${esc(nom(p.stop))}</span>${dd?`<s>${hm(p.prog)}</s>`:'<span></span>'}<b style="color:${dd>=10?'var(--bad)':dd>=3?'var(--warn)':'var(--text)'}">${hm(p.est??p.prog)}</b></li>`; }).join('')}</ul>`,'Veure les parades');
+    <div class="row"><span>Parades</span><span>${par.length}</span></div>${banMeu(tid)}`,`
+    <ul class="stops">${par.map(p=>{ const dd=p.est!=null?Math.round((p.est-p.prog)/60000):0; const mk=marcaMeu(tid,p.stop), sel=!mk&&r.est&&parentOf(p.stop)===r.est;
+      return `<li class="${mk?'meu':sel?'here':''}"><span>${mk||(sel?'📍 ':'')}${esc(nom(p.stop))}</span>${dd?`<s>${hm(p.prog)}</s>`:'<span></span>'}<b style="color:${dd>=10?'var(--bad)':dd>=3?'var(--warn)':'var(--text)'}">${hm(p.est??p.prog)}</b></li>`; }).join('')}</ul>`,'Veure les parades');
   c.classList.add('show');
   c.querySelector('.x').onclick=cerrar;
 }
@@ -1679,7 +1696,7 @@ function pintarAvisos(){
 }
 
 function pintarTodo(){
-  pintarChips(); pintarTrenes(); pintarStats(); actualitzarBadge();
+  pintarChips(); pintarTrenes(); pintarStats(); actualitzarBadge(); try{ pintarMeu(); }catch(e){}
   if(S.hidden.size) aplicarVies();
   if(S.mode==='late') pintarLista();
   if(S.sel){ if(S.trains.some(t=>t.id===S.sel)){ refrescarTarjeta(); const t=S.trains.find(x=>x.id===S.sel); if(S.follow && !S.motion[t.id]) map.panTo(t.pos,{animate:true}); } else cerrar(); }
@@ -2216,6 +2233,7 @@ async function pintarViatge(){
     return `<div class="vopt ${i===viSel?'on':''}" data-vi="${i}">
       <div class="vt"><b>${hm(o.depR)}</b><span class="ar">→ ${hm(o.arrR)}</span><span class="dur">${dur} min</span></div>
       <div class="vlegs">${o.legs.length>1?'':'<span>Directe</span> · '}${legs}</div>
+      ${esMeu(o)?'<span class="vmeu">★ És el teu viatge · surt a dalt del mapa</span>':''}
       <div class="vm">${!q && falta>=0 && falta<=90 ? (falta<1?'Surt ara':`Surt d'aquí a ${falta} min`)+' · ':''}${estat}</div></div>`;
   }).join('') : `<div class="empty">No hi ha cap tren de ${esc(nom(O))} a ${esc(nom(D))} ${arrB?'que hi arribi en les 3 hores abans d\'aquesta hora':'en les properes 3 hores'}.</div>`;
   if(viSel>=0 && viSel<viOpts.length) dibuixarViatge(viOpts[viSel], false);
@@ -2251,7 +2269,60 @@ function dibuixarViatge(o, encuadra){
 }
 $('list').addEventListener('click',e=>{ const it=e.target.closest('.vopt[data-vi]'); if(!it) return;
   viSel=+it.dataset.vi; document.querySelectorAll('.vopt').forEach(x=>x.classList.toggle('on',x===it));
-  const o=viOpts[viSel]; if(!o) return; if(window.innerWidth<=900) tancarFull(); dibuixarViatge(o, true); });
+  const o=viOpts[viSel]; if(!o) return; desarMeu(o); pintarViatge(); if(window.innerWidth<=900) tancarFull(); dibuixarViatge(o, true); });
+/* ===== El meu viatge: l'opció triada es guarda i es veu sempre a dalt del mapa ===== */
+S.meu=(()=>{ try{ return JSON.parse(localStorage.getItem('tev-meu'))||null; }catch(e){ return null; } })();
+let _meuT=null;
+function meuTids(){ if(!_meuT) _meuT=new Set((S.meu?.legs||[]).filter(l=>!l.walk).map(l=>l.tid)); return _meuT; }
+const firmaVi = o => o.legs.map(l=>l.walk?'w':l.tid+':'+l.a+':'+l.b).join(',');
+function esMeu(o){ return !!S.meu && firmaVi(o)===S.meu.firma && (S.meu.data===(S.quan?dataDia(S.quan.dia):todayStr())); }
+function desarMeu(o){
+  S.meu={o:S.vi.o, d:S.vi.d, data:S.quan?dataDia(S.quan.dia):todayStr(), firma:firmaVi(o),
+    legs:o.legs.map(l=>l.walk?{walk:true,de:l.de,a2:l.a2,seg:l.seg,txt:l.txt}:{tid:l.tid,a:l.a,b:l.b,lin:l.lin})};
+  try{ localStorage.setItem('tev-meu', JSON.stringify(S.meu)); }catch(e){}
+  _meuT=null; pintarMeu(); pintarTrenes(); }
+function treureMeu(){ S.meu=null; _meuT=null; try{ localStorage.removeItem('tev-meu'); }catch(e){} pintarMeu(); pintarTrenes(); if(S.mode==='viatge') pintarViatge(); }
+// hores del meu viatge (horari + temps real si és avui)
+function horesMeu(){
+  const m=S.meu; if(!m || !S.sched) return null; const mid=gtfsMidnight(m.data), avui=m.data===todayStr(); const legs=[];
+  for(const [k,l0] of m.legs.entries()){ const l={...l0};
+    if(l.walk){ const pr=legs[k-1]; l.depR=pr?pr.arrR:0; l.arrR=l.depR+l.seg*1000; legs.push(l); continue; }
+    const sch=S.sched.get(l.tid); if(!sch || !sch[l.a] || !sch[l.b]) return null;
+    l.depP=mid+sch[l.a].dep*1000; l.arrP=mid+sch[l.b].arr*1000; l.depR=l.depP; l.arrR=l.arrP;
+    if(avui){ try{ const par=paradasViaje(l.tid); if(par){ const pa=par[l.a], pb=par[l.b]; if(pa&&pa.estD!=null){ l.depR=pa.estD; l.rt=true; } if(pb&&pb.est!=null){ l.arrR=pb.est; l.rt=true; } } }catch(e){} }
+    l.puja=parentOf(sch[l.a].stop); l.baixa=parentOf(sch[l.b].stop); legs.push(l); }
+  return {legs, depR:legs[0].depR, arrR:legs[legs.length-1].arrR};
+}
+function legMeu(tid){ const h=horesMeu(); return h ? h.legs.find(l=>!l.walk && l.tid===tid) : null; }
+function marcaMeu(tid, stop){ const l=legMeu(tid); if(!l) return ''; const st=parentOf(stop); return st===l.puja?'🟢 Puja · ':st===l.baixa?'🔴 Baixa · ':''; }
+function banMeu(tid){ const l=legMeu(tid); if(!l) return '';
+  return `<div class="meuban">★ És el teu tren · puja a <b>${esc(nom(l.puja))}</b> (${hm(l.depR)}) i baixa a <b>${esc(nom(l.baixa))}</b> (${hm(l.arrR)})</div>`; }
+function pintarMeu(){
+  const bar=$('meuBar'); if(!S.meu){ bar.hidden=true; return; }
+  const h=horesMeu(); if(!h){ bar.hidden=true; return; }
+  const ara=Date.now(); if(ara>h.arrR+10*60000){ treureMeu(); return; }   // ja has arribat: s'esborra sol
+  const trens=h.legs.filter(l=>!l.walk), lins=trens.map(l=>l.lin||S.trips.get(l.tid)?.route||'?');
+  $('meuTit').textContent=`El meu viatge · ${hm(h.depR)} ${nom(S.meu.o)} → ${hm(h.arrR)} ${nom(S.meu.d)}`;
+  const falta=Math.round((h.depR-ara)/60000), ret=Math.round((trens[0].depR-trens[0].depP)/60000);
+  let est;
+  if(S.meu.data!==todayStr()) est=nomDia(S.meu.data).replace(/^./,c=>c.toUpperCase());
+  else if(falta>60) est=`Surt a les ${hm(h.depR)}`;
+  else if(falta>=1) est=`Surt d'aquí a ${falta} min`;
+  else if(ara<h.depR+60000) est='Surt ara';
+  else { const cur=h.legs.find(l=>ara<l.arrR); est = cur && !cur.walk ? `En camí · baixes a ${nom(cur.baixa)} a les ${hm(cur.arrR)}` : `Arribes a les ${hm(h.arrR)}`; }
+  $('meuSub').textContent=`${lins.join(' → ')} · ${est}${ret>=1?` · +${ret} min de retard`:''}${trens.length>1?` · ${trens.length-1} ${trens.length===2?'canvi':'canvis'}`:''}`;
+  bar.hidden=false;
+}
+$('meuBar').addEventListener('click',e=>{
+  if(e.target.closest('#meuX')){ e.stopPropagation(); treureMeu(); return; }
+  const h=horesMeu(); if(!h) return;
+  // ensenya el recorregut; si el tren ja circula, l'obre i el segueix
+  const viu=h.legs.find(l=>!l.walk && Date.now()<l.arrR && S.trains.some(t=>t.id===l.tid));
+  if(viu && S.meu.data===todayStr()){ abrirTren(viu.tid,true); return; }
+  if(S.sel||S.selRuta) cerrar();
+  if(window.innerWidth<=900) tancarFull();
+  dibuixarViatge(h, true); });
+setInterval(()=>{ if(!document.hidden) pintarMeu(); }, 15000);
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(forcar){
