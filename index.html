@@ -518,7 +518,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 39</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 40</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -2062,12 +2062,21 @@ $('viLoc').onclick=()=>{
     navigator.geolocation.getCurrentPosition(ok, ()=>{ $('viLoc').classList.remove('busy'); avMsg("No s'ha pogut saber on ets"); }, {enableHighAccuracy:false,timeout:25000,maximumAge:600000}); },
     {enableHighAccuracy:true,timeout:8000,maximumAge:60000});
 };
+// connexions a peu o en metro entre estacions que no comparteixen via (les dues xarxes d'FGC)
+function connexionsAPeu(){
+  if(S.peu) return S.peu; S.peu=new Map();
+  const tr=n=>S.parents.find(c=>normTxt(S.stops[c].name)===normTxt(n));
+  const afegeix=(a,b,seg,txt)=>{ a=tr(a); b=tr(b); if(!a||!b) return; (S.peu.get(a)||S.peu.set(a,[]).get(a)).push({to:b,seg,txt}); (S.peu.get(b)||S.peu.set(b,[]).get(b)).push({to:a,seg,txt}); };
+  afegeix('Barcelona - Plaça Espanya','Barcelona - Plaça Catalunya',20*60,'metro L1/L3 o a peu');
+  return S.peu;
+}
 function raptor(O, D, t0, viu, idx, MINT, MAXT){
+  const peu=connexionsAPeu();
   const best=new Map([[O,t0]]), lab=[new Map([[O,{arr:t0}]])]; let marcades=new Set([O]);
   for(let k=1;k<=3;k++){
     const cur=new Map(), seg=new Set();
     marcades.forEach(st=>{
-      const tau=lab[k-1].get(st).arr + (k>1?MINT:0), fins = k===1 ? t0+60 : tau+MAXT;
+      const L0=lab[k-1].get(st); const tau=L0.arr + (k>1&&!L0.walk?MINT:0), fins = k===1 ? t0+60 : tau+MAXT;
       (idx.get(st)||[]).forEach(e=>{
         if(e.dep<tau || e.dep>fins || !viu(e.tid)) return;
         const a=S.sched.get(e.tid);
@@ -2075,12 +2084,19 @@ function raptor(O, D, t0, viu, idx, MINT, MAXT){
           if(arr < (best.get(X) ?? Infinity)){ best.set(X,arr); cur.set(X,{arr, tid:e.tid, a:e.i, b:j, from:st}); seg.add(X); } }
       });
     });
+    // trams a peu des de les estacions on s'acaba d'arribar
+    [...seg].forEach(X=>{ (peu.get(X)||[]).forEach(w=>{ const arr=cur.get(X).arr+w.seg;
+      if(arr < (best.get(w.to) ?? Infinity)){ best.set(w.to,arr); cur.set(w.to,{arr, walk:true, seg:w.seg, txt:w.txt, from:X}); seg.add(w.to); } }); });
     lab.push(cur); marcades=seg; if(!seg.size) break;
   }
   let k=lab.length-1; while(k>0 && !lab[k].has(D)) k--; if(k<1) return null;
-  const legs=[]; let st=D; for(;k>0;k--){ const l=lab[k].get(st); legs.unshift({tid:l.tid, a:l.a, b:l.b}); st=l.from; }
-  const a0=S.sched.get(legs[0].tid), aN=S.sched.get(legs[legs.length-1].tid);
-  return {legs, dep:a0[legs[0].a].dep, arr:aN[legs[legs.length-1].b].arr};
+  const legs=[]; let st=D;
+  while(k>0){ const l=lab[k].get(st);
+    if(l.walk){ legs.unshift({walk:true, de:l.from, a2:st, seg:l.seg, txt:l.txt}); st=l.from; continue; }
+    legs.unshift({tid:l.tid, a:l.a, b:l.b}); st=l.from; k--; }
+  const trens=legs.filter(l=>!l.walk); if(!trens.length || legs[0].walk) return null;
+  const a0=S.sched.get(trens[0].tid), aN=S.sched.get(trens[trens.length-1].tid);
+  return {legs, dep:a0[trens[0].a].dep, arr:legs[legs.length-1].walk ? aN[trens[trens.length-1].b].arr+legs[legs.length-1].seg : aN[trens[trens.length-1].b].arr};
 }
 function planificar(O, D, data, des){
   const actius=S.cal?.get(data); const fins=des+3*3600, MINT=120, MAXT=45*60;
@@ -2111,16 +2127,19 @@ function planificar(O, D, data, des){
   if(opts.length<3){
     const idx=idxEstacions();
     const hores=[...new Set(desO.map(x=>x.dep))].sort((p,q)=>p-q).slice(0,10);
-    hores.forEach(t0=>{ const r=raptor(O,D,t0,viu,idx,MINT,MAXT); if(r && r.legs.length===3) opts.push(r); });
+    const firma=o=>o.legs.map(l=>l.walk?'w':l.tid).join(',');
+    const ja=new Set(opts.map(firma));
+    hores.forEach(t0=>{ const r=raptor(O,D,t0,viu,idx,MINT,MAXT); if(r && !ja.has(firma(r))){ ja.add(firma(r)); opts.push(r); } });
   }
   // temps real (avui)
   const avui=data===todayStr(), mid=gtfsMidnight(data);
-  opts.forEach(o=>{ o.legs.forEach(l=>{ const sch=S.sched.get(l.tid); l.depP=mid+sch[l.a].dep*1000; l.arrP=mid+sch[l.b].arr*1000; l.depR=l.depP; l.arrR=l.arrP;
+  opts.forEach(o=>{ o.legs.forEach((l,k)=>{ if(l.walk){ const pr=o.legs[k-1]; l.depR=pr?pr.arrR:0; l.arrR=l.depR+l.seg*1000; l.depP=l.depR; l.arrP=l.arrR; return; }
+      const sch=S.sched.get(l.tid); l.depP=mid+sch[l.a].dep*1000; l.arrP=mid+sch[l.b].arr*1000; l.depR=l.depP; l.arrR=l.arrP;
       if(avui){ try{ const par=paradasViaje(l.tid); if(par){ const pa=par[l.a], pb=par[l.b]; if(pa&&pa.estD!=null){ l.depR=pa.estD; l.rt=true; } if(pb&&pb.est!=null){ l.arrR=pb.est; l.rt=true; } } }catch(e){} }
       l.lin=(S.trips.get(l.tid)?.route)||S.trains.find(t=>t.id===l.tid)?.lin||''; });
     o.depR=o.legs[0].depR; o.arrR=o.legs[o.legs.length-1].arrR; });
   // si el transbord ja no dona temps per culpa del retard, fora
-  const bons=opts.filter(o=>o.legs.every((l,k)=>k===0 || l.depR-o.legs[k-1].arrR>=60000));
+  const bons=opts.filter(o=>o.legs.every((l,k)=>k===0 || l.walk || l.depR-o.legs[k-1].arrR >= (o.legs[k-1].walk?0:60000)));
   // millors opcions: per hora d'arribada; es treu la que surt abans i arriba igual o més tard que una altra
   bons.sort((p,q)=>p.arrR-q.arrR || q.depR-p.depR || p.legs.length-q.legs.length);
   const out=[]; bons.forEach(o=>{ if(out.some(p=>p.depR>=o.depR && p.arrR<=o.arrR && p.legs.length<=o.legs.length)) return; out.push(o); });
@@ -2140,12 +2159,15 @@ async function pintarViatge(){
   viOpts=planificar(O, D, data, Math.max(0,des-60));
   await completarViajes([...new Set(viOpts.flatMap(o=>o.legs.map(l=>l.tid)))]);
   if(S.mode!=='viatge' || S.vi.o!==O || S.vi.d!==D) return;
-  viOpts.forEach(o=>o.legs.forEach(l=>{ if(!l.lin) l.lin=S.trips.get(l.tid)?.route||'?'; }));
+  viOpts.forEach(o=>o.legs.forEach(l=>{ if(!l.walk && !l.lin) l.lin=S.trips.get(l.tid)?.route||'?'; }));
   const ara=Date.now();
   L_.innerHTML = viOpts.length ? viOpts.map((o,i)=>{
     const dur=Math.round((o.arrR-o.depR)/60000), falta=Math.round((o.depR-ara)/60000);
     const ret=Math.round((o.legs[0].depR-o.legs[0].depP)/60000), retA=Math.round((o.arrR-o.legs[o.legs.length-1].arrP)/60000);
-    const legs=o.legs.map((l,k)=>`<span class="lin" style="background:${colorOf(l.lin)}">${esc(l.lin)}</span>${k<o.legs.length-1?` <span>canvi a ${esc(nom(S.sched.get(l.tid)[l.b].stop))} · ${Math.max(1,Math.round((o.legs[k+1].depR-l.arrR)/60000))} min</span> →`:''}`).join(' ');
+    const legs=o.legs.map((l,k)=>{ const nx=o.legs[k+1];
+      if(l.walk) return `<span>🚶 fins a ${esc(nom(l.a2))} · ${Math.round(l.seg/60)} min (${esc(l.txt)})</span>${nx?' →':''}`;
+      const baixa=nom(S.sched.get(l.tid)[l.b].stop);
+      return `<span class="lin" style="background:${colorOf(l.lin)}">${esc(l.lin)}</span>${nx ? (nx.walk ? ` <span>fins a ${esc(baixa)}</span> →` : ` <span>canvi a ${esc(baixa)} · ${Math.max(1,Math.round((nx.depR-l.arrR)/60000))} min</span> →`) : ''}`; }).join(' ');
     const rt=o.legs.some(l=>l.rt);
     const estat = !rt ? 'Segons horari' : (ret>=1||retA>=1) ? `<span class="${retA>=10?'b':retA>=3?'w':'ok'}">+${Math.max(ret,retA)} min de retard</span> · temps real` : '<span class="ok">A l\'hora</span> · temps real';
     return `<div class="vopt ${i===viSel?'on':''}" data-vi="${i}">
@@ -2165,6 +2187,10 @@ function dibuixarViatge(o, encuadra){
   capaRuta.clearLayers(); S.selRuta=null;
   const tots=[];
   o.legs.forEach((l,k)=>{
+    if(l.walk){ const A=S.stops[l.de], B=S.stops[l.a2]; if(A&&B){ tots.push([A.lat,A.lon],[B.lat,B.lon]);
+      L.polyline([[A.lat,A.lon],[B.lat,B.lon]],{color:'#6b7480',weight:4,opacity:.9,dashArray:'2 6',interactive:false}).addTo(capaRuta);
+      if(k===o.legs.length-1) L.circleMarker([B.lat,B.lon],{radius:7,color:'#6b7480',weight:3,fillColor:'#6b7480',fillOpacity:1}).bindTooltip(`<b>${esc(B.name)}</b> · arriba ${hm(l.arrR)}`,{permanent:true,direction:'top',className:'rtt',offset:[0,-6]}).addTo(capaRuta); }
+      return; }
     const sch=S.sched.get(l.tid), A=S.stops[parentOf(sch[l.a].stop)], B=S.stops[parentOf(sch[l.b].stop)], col=colorOf(l.lin);
     let pts=trossShape(puntsRuta(l.tid), A, B);
     if(!pts) pts=sch.slice(l.a,l.b+1).map(s=>S.stops[parentOf(s.stop)]).filter(s=>s&&isFinite(s.lat)).map(s=>[s.lat,s.lon]);
