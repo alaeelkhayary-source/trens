@@ -548,7 +548,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 2/11 · 50</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 2/11 · 51</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1310,6 +1310,33 @@ function elegirEstacion(code){
   mostrarPestanya();
   pintarEstacion();
 }
+/* Hora d'arribada d'un tren que ja circula, a partir d'ON ÉS ara (no només de l'horari):
+   distància que li falta sobre el traçat ÷ velocitat de l'horari en aquest tram. Si la dada de temps real
+   d'FGC diu una hora abans, es fa servir aquella (millor avisar abans d'hora que perdre el tren). */
+function etaTren(t, code){
+  const par=t.par; if(!par) return null; const ara=Date.now();
+  const j=par.findIndex((p,k)=>k>=Math.max(0,t.sigIdx) && parentOf(p.stop)===code);
+  if(j<0){ const abans=par.findIndex(p=>parentOf(p.stop)===code); return abans>=0 && abans<t.sigIdx ? {passat:true} : null; }
+  const p=par[j], rtArr=p.est??p.prog, rtDep=p.estD??p.progD??rtArr;
+  if(t.parado && parentOf(t.parado)===code) return {arr:ara, dep:Math.max(ara, Math.min(rtDep, ara+90000)), aqui:true};
+  let arr=rtArr;
+  const mo=S.motion[t.id], a0=par[Math.max(0,t.sigIdx-1)];
+  if(mo && a0 && j>0){
+    const E=S.stops[code], A=S.stops[parentOf(a0.stop)];
+    if(E && A && isFinite(E.lat) && isFinite(A.lat)){
+      const sE=proyectar(mo.sh,E.lat,E.lon), sA=proyectar(mo.sh,A.lat,A.lon);
+      const sAra=Math.max(sEn(mo,ara), mo.realS??-1e9), tram=sE.s-sA.s, temps=(p.prog-a0.progD)/1000;
+      if(sE.d<500 && sA.d<500 && tram>200 && temps>20){
+        const falta=Math.max(0, sE.s-sAra);
+        const segons=Math.min(falta/(tram/temps), falta/6);   // com a molt, a 6 m/s de mitjana (≈22 km/h) per no inventar retards grans
+        const posEta=ara+segons*1000;
+        if(t.parado || sAra>sA.s-50) arr=Math.min(rtArr, posEta);
+      }
+    }
+  }
+  arr=Math.max(ara, arr);
+  return {arr, dep:Math.max(arr, rtDep - rtArr + arr)};
+}
 async function salidasEstacion(code){
   const ahora=Date.now();
   const salidas=[];
@@ -1325,6 +1352,13 @@ async function salidasEstacion(code){
     salidas.push({tripId, lin:(tren?.lin||info?.route||'?'), dest:info?.headsign||nom(par[par.length-1].stop), prog:p.progD, est:p.estD, real:true});
     vistos.add((info?.route||'')+'|'+p.progD);
   });
+  // 1b) Trens que circulen ara i encara han de passar per aquí (encara que vagin tard i l'horari ja els doni per passats)
+  { const ja=new Set(salidas.map(s=>s.tripId));
+    S.trains.forEach(t=>{ if(ja.has(t.id) || !t.par) return;
+      const i=t.par.findIndex((p,k)=>k>=Math.max(0,t.sigIdx) && parentOf(p.stop)===code); if(i<0 || i===t.par.length-1) return;
+      const p=t.par[i], info=S.trips.get(t.id);
+      salidas.push({tripId:t.id, lin:t.lin||info?.route||'?', dest:info?.headsign||nom(t.par[t.par.length-1].stop), prog:p.progD, est:p.estD, real:true});
+      vistos.add((info?.route||'')+'|'+p.progD); }); }
   // 2) Resta de serveis d'avui segons l'horari complet (ja descarregat); si encara no hi és, es pregunta a FGC
   if(S.horarios && S.cal){
     const vistTid=new Set(salidas.map(s=>s.tripId));
@@ -1350,6 +1384,12 @@ async function salidasEstacion(code){
       salidas.push({lin:x.route_short_name, dest:x.trip_headsign, prog, est:null, real:false, tripId:buscarViatge(code, tSec(x.departure_time), x.trip_headsign)});
     });
   }catch(e){ console.warn('viajes-de-hoy', e); }
+  // els trens que ja circulen: hora segons on són ara; si ja han passat per l'estació, fora de la llista
+  const viu=new Map(S.trains.map(t=>[t.id,t]));
+  for(let k=salidas.length-1;k>=0;k--){ const s=salidas[k], t=s.tripId&&viu.get(s.tripId); if(!t) continue;
+    const e=etaTren(t, code); if(!e) continue;
+    if(e.passat){ salidas.splice(k,1); continue; }
+    s.est=e.dep; s.real=true; s.aqui=!!e.aqui; s.arrEst=e.arr; }
   salidas.sort((a,b)=>(a.est??a.prog)-(b.est??b.prog));
   salidas.forEach(s=>s.code=code);
   return salidas;
@@ -1364,7 +1404,7 @@ function htmlSalida(s, ahora){
     const t=s.est??s.prog; const d=s.est!=null?Math.round((s.est-s.prog)/60000):null;
     const min=Math.max(0,Math.round((t-ahora)/60000));
     return `<div class="item" ${s.tripId?`data-id="${esc(s.tripId)}"`:''}>
-      <div class="big ${s.real?cls(d):'ok'}" style="${s.real?'':'color:var(--dim)'}">${min<1?'ara':min+'′'}</div>
+      <div class="big ${s.real?cls(d):'ok'}" style="${s.real?'':'color:var(--dim)'}">${s.aqui?'<small style="font-size:12px;line-height:1.1;display:block">a l\'andana</small>':min<1?'ara':min+'′'}</div>
       <div><div class="t"><span class="lin" style="background:${colorOf(s.lin)}">${esc(s.lin)}</span> ${esc(s.dest)}</div>
       <div class="m">${s.real ? (d>=1?`<span style="color:var(--${cls(d)==='b'?'bad':cls(d)==='w'?'warn':'ok'})">${fmtD(d)} min de retard</span>`:'<span style="color:var(--ok)">A l\'hora · temps real</span>') : 'Segons horari'}</div></div>
       <div class="times">${s.real&&d?`<s>${hm(s.prog)}</s>`:''}<b>${hm(t)}</b>${botoAvis(s.tripId, s.code, null)}</div></div>`;
