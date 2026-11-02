@@ -100,6 +100,9 @@ b,strong{font-weight:600}
 #map.lejos .tpill{height:24px;padding:0 8px;font-size:12px}
 #map.z10 .tw:not(.sel) .tpill{height:16px;min-width:16px;width:16px;padding:0;font-size:0;border-width:2px;gap:0;justify-content:center}
 #map.z10 .tw:not(.sel) .tpill .td{display:none}
+.tw.mini:not(.sel) .tpill{height:14px;min-width:14px;width:14px;padding:0;font-size:0;border-width:2px;gap:0;opacity:.9}
+.tw.mini:not(.sel) .tpill .td{display:none}
+.tw.mini:not(.sel){z-index:-1}
 .leaflet-marker-pane .tm{z-index:auto}
 .city{white-space:nowrap;pointer-events:none;font-family:var(--sans);color:#98a1ab;transform:translate(-50%,-50%);text-shadow:0 0 3px var(--bg),0 0 6px var(--bg);font-weight:400}
 .city.c1{font-size:13px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:#7d8793}
@@ -515,7 +518,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 38</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 39</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1203,8 +1206,21 @@ function pintarTrenes(){
     else S.markers[t.id]=L.marker(S.motion[t.id]?puntoEn(S.motion[t.id].sh, sEn(S.motion[t.id],Date.now())):t.pos,{icon}).on('click',()=>abrirTren(t.id,true)).addTo(capaTrenes);
   });
   Object.keys(S.markers).forEach(id=>{ if(!vivos.has(id)){ capaTrenes.removeLayer(S.markers[id]); delete S.markers[id]; } });
+  desamuntegar();
 }
 
+/* Trens amuntegats: si dues etiquetes es trepitgen a la pantalla, la menys important es fa petita (punt de color) */
+function desamuntegar(){
+  if(!map.ml || !map._loaded) return;
+  const per=new Map(S.trains.map(t=>[t.id,t])), v=[];
+  for(const id in S.markers){ const m=S.markers[id], el=m.getElement && m.getElement().querySelector('.tw'); if(!el) continue;
+    const ll=m.getLatLng(), p=map.ml.project([ll.lng,ll.lat]); const t=per.get(id), d=t?retrasoTren(t):0;
+    v.push({el, x:p.x, y:p.y, pr: id===S.sel?1e9 : (d||0)*10 + (S.hidden.has(t?.lin)?-100:0)}); }
+  v.sort((a,b)=>b.pr-a.pr); const fets=[];
+  v.forEach(o=>{ const xoca=fets.some(f=>Math.abs(f.x-o.x)<58 && Math.abs(f.y-o.y)<26); o.el.classList.toggle('mini', xoca); if(!xoca) fets.push(o); });
+}
+map.on('moveend zoomend', ()=>desamuntegar());
+setInterval(()=>{ if(!document.hidden && !mapaMovent) desamuntegar(); }, 1500);
 function pintarStats(){
   const v=visibles(); const ds=v.map(retrasoTren).filter(x=>x!=null);
   const tarde=ds.filter(x=>x>=3);
@@ -1791,7 +1807,7 @@ function idxEstacions(){
   if(S.idxEst) return S.idxEst;
   S.idxEst=new Map();
   S.sched.forEach((a,tid)=>{ a.forEach((st,i)=>{ if(i===a.length-1) return;
-    const k=parentOf(st.stop); let v=S.idxEst.get(k); if(!v){v=[];S.idxEst.set(k,v);} v.push({tid, dep:st.dep}); }); });
+    const k=parentOf(st.stop); let v=S.idxEst.get(k); if(!v){v=[];S.idxEst.set(k,v);} v.push({tid, dep:st.dep, i}); }); });
   return S.idxEst;
 }
 function sortidesProgramades(code, data, secDes, n){
@@ -2046,6 +2062,26 @@ $('viLoc').onclick=()=>{
     navigator.geolocation.getCurrentPosition(ok, ()=>{ $('viLoc').classList.remove('busy'); avMsg("No s'ha pogut saber on ets"); }, {enableHighAccuracy:false,timeout:25000,maximumAge:600000}); },
     {enableHighAccuracy:true,timeout:8000,maximumAge:60000});
 };
+function raptor(O, D, t0, viu, idx, MINT, MAXT){
+  const best=new Map([[O,t0]]), lab=[new Map([[O,{arr:t0}]])]; let marcades=new Set([O]);
+  for(let k=1;k<=3;k++){
+    const cur=new Map(), seg=new Set();
+    marcades.forEach(st=>{
+      const tau=lab[k-1].get(st).arr + (k>1?MINT:0), fins = k===1 ? t0+60 : tau+MAXT;
+      (idx.get(st)||[]).forEach(e=>{
+        if(e.dep<tau || e.dep>fins || !viu(e.tid)) return;
+        const a=S.sched.get(e.tid);
+        for(let j=e.i+1;j<a.length;j++){ const X=parentOf(a[j].stop), arr=a[j].arr;
+          if(arr < (best.get(X) ?? Infinity)){ best.set(X,arr); cur.set(X,{arr, tid:e.tid, a:e.i, b:j, from:st}); seg.add(X); } }
+      });
+    });
+    lab.push(cur); marcades=seg; if(!seg.size) break;
+  }
+  let k=lab.length-1; while(k>0 && !lab[k].has(D)) k--; if(k<1) return null;
+  const legs=[]; let st=D; for(;k>0;k--){ const l=lab[k].get(st); legs.unshift({tid:l.tid, a:l.a, b:l.b}); st=l.from; }
+  const a0=S.sched.get(legs[0].tid), aN=S.sched.get(legs[legs.length-1].tid);
+  return {legs, dep:a0[legs[0].a].dep, arr:aN[legs[legs.length-1].b].arr};
+}
 function planificar(O, D, data, des){
   const actius=S.cal?.get(data); const fins=des+3*3600, MINT=120, MAXT=45*60;
   const viu = tid => !actius || actius.has(tid.split('|')[0]);
@@ -2071,6 +2107,12 @@ function planificar(O, D, data, des){
     }
     if(millor) opts.push(millor);
   });
+  // amb 2 transbords (3 trens), només si no hi ha prou opcions: cerca per rondes (tipus RAPTOR) des de cada hora de sortida
+  if(opts.length<3){
+    const idx=idxEstacions();
+    const hores=[...new Set(desO.map(x=>x.dep))].sort((p,q)=>p-q).slice(0,10);
+    hores.forEach(t0=>{ const r=raptor(O,D,t0,viu,idx,MINT,MAXT); if(r && r.legs.length===3) opts.push(r); });
+  }
   // temps real (avui)
   const avui=data===todayStr(), mid=gtfsMidnight(data);
   opts.forEach(o=>{ o.legs.forEach(l=>{ const sch=S.sched.get(l.tid); l.depP=mid+sch[l.a].dep*1000; l.arrP=mid+sch[l.b].arr*1000; l.depR=l.depP; l.arrR=l.arrP;
@@ -2078,7 +2120,7 @@ function planificar(O, D, data, des){
       l.lin=(S.trips.get(l.tid)?.route)||S.trains.find(t=>t.id===l.tid)?.lin||''; });
     o.depR=o.legs[0].depR; o.arrR=o.legs[o.legs.length-1].arrR; });
   // si el transbord ja no dona temps per culpa del retard, fora
-  const bons=opts.filter(o=>o.legs.length<2 || o.legs[1].depR-o.legs[0].arrR>=60000);
+  const bons=opts.filter(o=>o.legs.every((l,k)=>k===0 || l.depR-o.legs[k-1].arrR>=60000));
   // millors opcions: per hora d'arribada; es treu la que surt abans i arriba igual o més tard que una altra
   bons.sort((p,q)=>p.arrR-q.arrR || q.depR-p.depR || p.legs.length-q.legs.length);
   const out=[]; bons.forEach(o=>{ if(out.some(p=>p.depR>=o.depR && p.arrR<=o.arrR && p.legs.length<=o.legs.length)) return; out.push(o); });
@@ -2110,7 +2152,7 @@ async function pintarViatge(){
       <div class="vt"><b>${hm(o.depR)}</b><span class="ar">→ ${hm(o.arrR)}</span><span class="dur">${dur} min</span></div>
       <div class="vlegs">${o.legs.length>1?'':'<span>Directe</span> · '}${legs}</div>
       <div class="vm">${!q && falta>=0 && falta<=90 ? (falta<1?'Surt ara':`Surt d'aquí a ${falta} min`)+' · ':''}${estat}</div></div>`;
-  }).join('') : `<div class="empty">No hi ha cap tren de ${esc(nom(O))} a ${esc(nom(D))} en les properes 3 hores (directe o amb un transbord).</div>`;
+  }).join('') : `<div class="empty">No hi ha cap tren de ${esc(nom(O))} a ${esc(nom(D))} en les properes 3 hores.</div>`;
   if(viSel>=0 && viSel<viOpts.length) dibuixarViatge(viOpts[viSel], false);
 }
 function trossShape(pts, A, B){
