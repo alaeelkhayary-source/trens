@@ -459,7 +459,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 25</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 26</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -921,10 +921,33 @@ const baseLin = id => { const m=String(id).match(/^([A-Z]+\d)\d+$/); return m?m[
 const teTrens = id => S.trains.some(t=>t.lin===id);
 function liniaActiva(id){ return [id, baseLin(id)].some(x=>teTrens(x) && !S.hidden.has(x)); }
 function viaAmagada(id){ return S.hidden.size>0 && !liniaActiva(id); }
+// Amb línies amagades: les vies "oficials" d'FGC (que comparteixen trams entre línies) s'amaguen
+// i es dibuixa el recorregut real dels trens de les línies activades; només en queden les seves estacions.
+const capaViesAct = L.layerGroup().addTo(map);
+S.estAct=new Set(); S.viesSig=null;
 function aplicarVies(){
+  const filtre = S.hidden.size>0 && S.trains.length>0;
   for(const id in S.capesLin){
-    const ama=S.trains.length ? viaAmagada(id) : S.hidden.has(id);
+    const ama = filtre ? true : S.hidden.has(id);
     S.capesLin[id].forEach(g=>g.eachLayer(l=>l.setStyle({opacity: ama?0:(l.options.className==='linfons'?.95:.9)})));
+  }
+  const est=new Set(), rutes=new Map();
+  if(filtre) S.trains.forEach(t=>{
+    if(S.hidden.has(t.lin)) return;
+    (t.par||[]).forEach(p=>est.add(parentOf(p.stop)));
+    [t.origen,t.desti,t.parado,...(t.prox||[])].forEach(c=>{ if(c) est.add(parentOf(c)||c); });
+    const info=S.trips.get(t.id); const clau=(info&&info.shape!=null?'s'+info.shape:'t'+t.id)+'|'+t.lin;
+    if(!rutes.has(clau)) rutes.set(clau,{tid:t.id, lin:t.lin});
+  });
+  S.estAct=est;
+  const sig=[...rutes.keys()].sort().join(',')+'|'+esFosc();
+  if(sig!==S.viesSig){
+    S.viesSig=sig; capaViesAct.clearLayers();
+    const fons=[], cols=[];
+    rutes.forEach(({tid,lin})=>{ const pts=puntsRuta(tid); if(pts.length<2) return;
+      fons.push(L.polyline(pts,{color:esFosc()?'#0f1114':'#ffffff',weight:7,opacity:.95,interactive:false}));
+      cols.push(L.polyline(pts,{color:colorOf(lin),weight:3.5,opacity:.9,interactive:false})); });
+    fons.concat(cols).forEach(l=>l.addTo(capaViesAct));
   }
   if(S.parents.length) pintarEstaciones();
 }
@@ -952,7 +975,7 @@ function liniesEstacio(code){
   }
   return S.estLin[code];
 }
-const estAmagada=p=>{ if(!S.hidden.size || esFav(p) || !S.trains.length) return false; const ls=liniesEstacio(p); if(!ls) return false; return ![...ls].some(liniaActiva); };
+const estAmagada=p=>{ if(!S.hidden.size || esFav(p) || !S.trains.length) return false; return !S.estAct.has(p); };
 const estMarkers=[];
 map.createPane('estPane').style.zIndex=450;
 const rendEst=L.canvas({padding:.3, pane:'estPane'});
