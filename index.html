@@ -477,6 +477,8 @@ html.dark .loading{background:var(--bg);color:var(--text)}
 html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
 .temabtn{flex:none;width:32px;height:32px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0}
 </style>
+<!-- Estadístiques privades (GoatCounter): sense galetes ni dades personals -->
+<script data-goatcounter="https://alae.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
 </head>
 <body>
 <div class="loading" id="loading"><div>Carregant la xarxa d'FGC…</div><div class="bar"><i></i></div><div id="loadTxt" style="font-size:12px"></div></div>
@@ -546,7 +548,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 48</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 49</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1452,8 +1454,11 @@ map.on('popupclose',()=>{ popCode=null; });
 
 /* ===== Estacions preferides (es guarden en aquest dispositiu) ===== */
 const esFav = code => S.favs.includes(code);
+/* Estadístiques: compta accions (només el nom de l'acció, res de la persona) */
+function compta(nom){ try{ const f=()=>window.goatcounter?.count?.({path:'accio/'+nom, title:nom, event:true}); if(window.goatcounter?.count) f(); else setTimeout(f,3000); }catch(e){} }
+try{ if(matchMedia('(display-mode: standalone)').matches || navigator.standalone) compta('obert-com-app'); }catch(e){}
 function toggleFav(code){
-  if(esFav(code)) S.favs=S.favs.filter(c=>c!==code); else S.favs.push(code);
+  if(esFav(code)) S.favs=S.favs.filter(c=>c!==code); else { S.favs.push(code); compta('preferida-afegida'); }
   try{ localStorage.setItem('tev-favs', JSON.stringify(S.favs)); }catch(e){}
   try{ navigator.storage?.persist?.(); }catch(e){}
   try{ document.cookie='tevfavs='+encodeURIComponent(JSON.stringify(S.favs))+'; max-age=315360000; path=/; SameSite=Lax'; }catch(e){}
@@ -1957,6 +1962,7 @@ function botoAvis(tid, code, data){
 function avMsg(t){ const m=$('avMsg'); m.textContent=t; m.style.display='block'; clearTimeout(avMsg.t); avMsg.t=setTimeout(()=>m.style.display='none',3500); }
 let avSel=null;
 function obrirAvis(tid, code, data){
+  compta('avis-obert');
   const info=S.trips.get(tid)||{}; const a=S.sched.get(tid);
   const dest=info.headsign||(a?nom(a[a.length-1].stop):''); const lin=info.route||S.trains.find(t=>t.id===tid)?.lin||'';
   const dia=data||dataDia(0);
@@ -2109,7 +2115,7 @@ function suggVi(inp){
   box.innerHTML = r.length ? r.map(c=>`<button type="button" data-vs="${esc(c)}"><span>${esc(S.stops[c].name)}</span><span class="sl">${lineasEstacion(c).slice(0,4).map(l=>`<i style="background:${colorOf(l)}"></i>`).join('')}</span></button>`).join('') : '<div class="sv">Cap estació amb aquest nom</div>';
   box.classList.add('on');
 }
-function triarVi(camp, c){ S.vi[camp==='viO'?'o':'d']=c; if(camp==='viO') S.vi.aPeu=null; desaVi(); omplirVi(); $('viSugg').innerHTML=''; $('viSugg').classList.remove('on'); $(camp).blur();
+function triarVi(camp, c){ S.vi[camp==='viO'?'o':'d']=c; if(S.vi.o&&S.vi.d) compta('viatge-cercat'); if(camp==='viO') S.vi.aPeu=null; desaVi(); omplirVi(); $('viSugg').innerHTML=''; $('viSugg').classList.remove('on'); $(camp).blur();
   if(camp==='viO' && !S.vi.d) $('viD').focus(); else pintarViatge(); }
 ['viO','viD'].forEach(id=>{
   $(id).addEventListener('input',()=>suggVi(id));
@@ -2290,6 +2296,7 @@ function meuTids(){ if(!_meuT) _meuT=new Set((S.meu?.legs||[]).filter(l=>!l.walk
 const firmaVi = o => o.legs.map(l=>l.walk?'w':l.tid+':'+l.a+':'+l.b).join(',');
 function esMeu(o){ return !!S.meu && firmaVi(o)===S.meu.firma && (S.meu.data===(S.quan?dataDia(S.quan.dia):todayStr())); }
 function desarMeu(o){
+  compta('viatge-guardat');
   S.meu={o:S.vi.o, d:S.vi.d, data:S.quan?dataDia(S.quan.dia):todayStr(), firma:firmaVi(o),
     legs:o.legs.map(l=>l.walk?{walk:true,de:l.de,a2:l.a2,seg:l.seg,txt:l.txt}:{tid:l.tid,a:l.a,b:l.b,lin:l.lin})};
   try{ localStorage.setItem('tev-meu', JSON.stringify(S.meu)); }catch(e){}
@@ -2392,7 +2399,7 @@ async function ciclo(forcar){
   const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   let prompt=null;
   window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); prompt=e; document.body.classList.add('can-install'); });
-  window.addEventListener('appinstalled',()=>{ prompt=null; document.body.classList.remove('can-install'); });
+  window.addEventListener('appinstalled',()=>{ compta('app-installada'); prompt=null; document.body.classList.remove('can-install'); });
   if(ios) document.body.classList.add('can-install');
   const share='<svg class="ios-share" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5v10h14V11h-1"/></svg>';
   $('instBtn').onclick=async()=>{
