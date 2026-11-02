@@ -133,6 +133,7 @@ b,strong{font-weight:600}
 /* Bombolla d'estació */
 .estpop .maplibregl-popup-content{border-radius:14px;box-shadow:0 2px 6px rgba(16,24,40,.08),0 12px 32px rgba(16,24,40,.18);padding:14px 16px;background:var(--panel);color:var(--text);width:292px;max-width:calc(100vw - 40px);box-sizing:border-box}
 .estpop .maplibregl-popup-content{font-family:var(--sans)}
+.maplibregl-popup{z-index:5000}   /* la fitxa d'una estació sempre per sobre dels trens */
 .estpop .maplibregl-popup-tip{border-top-color:var(--panel)!important}
 .ltt{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:4px 8px;font:12px var(--sans);white-space:nowrap;box-shadow:0 2px 8px rgba(16,24,40,.15);pointer-events:none}
 .nordbtn{position:absolute;z-index:500;right:440px;bottom:206px;width:40px;height:40px;border-radius:12px;border:none;background:var(--panel);box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
@@ -540,7 +541,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 44</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 2/11 · 45</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1417,6 +1418,7 @@ async function mostrarPopupEst(code, fixar){
   const c=cacheSal[code]; const fresc=c && Date.now()-c.t<20000;
   if(!popEst) popEst=L.popup({className:'estpop', closeButton:false, autoPan:false, offset:[0,-8], maxWidth:300, minWidth:250, autoPanPaddingTopLeft:[12,140], autoPanPaddingBottomRight:[12,24]});
   popEst.options.autoPan=!HOVER || !!fixar;
+  { const tp=document.querySelector('.top'), mb=$('map').getBoundingClientRect(); popEst.options.autoPanPaddingTopLeft=[12, tp?Math.max(140, tp.getBoundingClientRect().bottom-mb.top+12):140]; }   // que no quedi sota la capçalera ni la barra del meu viatge
   { const mob=window.innerWidth<=900; popEst.options.autoPanPaddingBottomRight=[12, mob?110:24]; if(!mob) popEst.options.autoPanPaddingBottomRight=[440,24]; }
   popEst.setLatLng([s.lat,s.lon]).setContent(htmlPopupEst(code, c?c.s:null));
   if(!map.hasLayer(popEst)){
