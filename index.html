@@ -233,6 +233,27 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .tab{padding:5px 11px;background:none;border:1px solid var(--line);color:var(--muted);font-size:12px;cursor:pointer;border-radius:999px}
 .tab.on{background:var(--text);border-color:var(--text);color:#fff}
 .search{margin-top:12px;width:100%;padding:11px 14px;background:var(--card);border:1px solid transparent;color:var(--text);font:14px var(--sans);border-radius:10px;outline:none}
+.viform{position:relative;display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.vrow{display:flex;align-items:center;gap:8px}
+.vrow .search{margin-top:0;flex:1}
+.vdot{width:12px;height:12px;border-radius:50%;flex:none;border:3px solid var(--text)}
+.vdot.d{background:var(--text)}
+.vloc{flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.vloc svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}.vloc svg .f{fill:currentColor;stroke:none}
+#viSugg{position:absolute;left:20px;right:48px;top:100%;z-index:20;margin-top:4px}
+#viSugg.o{top:48px}
+.vopt{padding:12px 10px;border-radius:12px;cursor:pointer}
+.vopt+.vopt{border-top:1px solid var(--line)}
+.vopt:hover{background:var(--card)}
+.vopt.on{background:var(--card);box-shadow:inset 3px 0 0 var(--text)}
+.vt{display:flex;align-items:baseline;gap:8px}
+.vt b{font:700 20px var(--sans);letter-spacing:-.3px}
+.vt .ar{color:var(--muted)}
+.vt .dur{margin-left:auto;font:600 14px var(--sans)}
+.vlegs{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:13px;color:var(--muted)}
+.vlegs .lin{font-size:12px}
+.vm{margin-top:4px;font-size:12.5px;color:var(--muted)}
+.vm .ok{color:var(--ok)}.vm .w{color:var(--warn)}.vm .b{color:var(--bad)}
 .sugg{display:none;margin-top:6px;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;box-shadow:0 8px 24px rgba(16,24,40,.12)}
 .sugg.on{display:block}
 .sugg button{display:flex;width:100%;justify-content:space-between;align-items:center;gap:10px;padding:12px 14px;border:none;background:none;color:var(--text);font:500 15px var(--sans);text-align:left;cursor:pointer}
@@ -443,6 +464,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
       <div class="modes">
         <button class="mode" data-mode="favs">★ Preferides</button>
         <button class="mode on" data-mode="station">Trens</button>
+        <button class="mode" data-mode="viatge">Viatge</button>
       </div>
       <div id="hdrLate">
         <div class="desc" id="lateDesc">Carregant…</div>
@@ -453,6 +475,14 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
         </div>
       </div>
       <div id="hdrFav" style="display:none"><div class="desc" id="favDesc"></div></div>
+      <div id="hdrVi" style="display:none">
+        <div class="viform">
+          <div class="vrow"><span class="vdot o"></span><input class="search vin" id="viO" type="search" placeholder="D'on surts?" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="next"><button class="vloc" id="viLoc" type="button" aria-label="Des d'on soc" title="Des d'on soc"><svg viewBox="0 0 24 24"><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" class="f"/></svg></button></div>
+          <div class="vrow"><span class="vdot d"></span><input class="search vin" id="viD" type="search" placeholder="On vas?" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search"><button class="vloc" id="viSwap" type="button" aria-label="Intercanviar origen i destí" title="Intercanviar">⇅</button></div>
+          <div class="sugg" id="viSugg" role="listbox"></div>
+          <div class="desc" id="viDesc"></div>
+        </div>
+      </div>
       <div id="hdrSt" style="display:none">
         <input class="search" id="search" type="search" placeholder="Busca la teva estació" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
         <div class="sugg" id="sugg" role="listbox"></div>
@@ -467,7 +497,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 32</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 33</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -486,7 +516,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
   <div class="avact"><button id="avDel" class="del" style="display:none">Treure avís</button><button id="avNo">Cancel·lar</button><button id="avOk" class="ok">Activar avís</button></div>
   <div class="avnote" id="avNote">Rebràs l'avís mentre tinguis la web oberta (també en segon pla). A l'iPhone, cal tenir-la instal·lada a la pantalla d'inici.</div>
 </div></div><div class="avmsg" id="avMsg"></div>
-<nav class="tabbar" id="tabbar"><button data-tab="mapa" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Mapa</span></button><button data-tab="favs"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Preferides</span></button><button data-tab="station"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-3M15 21l2-3"/></svg><span>Trens</span></button></nav>
+<nav class="tabbar" id="tabbar"><button data-tab="mapa" class="on"><svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg><span>Mapa</span></button><button data-tab="favs"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Preferides</span></button><button data-tab="station"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-3M15 21l2-3"/></svg><span>Trens</span></button><button data-tab="viatge"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.5 6H15a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.5"/></svg><span>Viatge</span></button></nav>
 <script>
 /* ================= CONFIG ================= */
 const BASE = 'https://dadesobertes.fgc.cat/api/explore/v2.1/catalog/datasets';
@@ -1163,6 +1193,7 @@ function pintarLista(){
   const L_=$('list');
   if(S.mode==='station'){ pintarEstacion(); return; }
   if(S.mode==='favs'){ pintarFavs(); return; }
+  if(S.mode==='viatge'){ pintarViatge(); return; }
   const v=visibles().map(t=>({t, d:retrasoTren(t)}));
   const late=v.filter(x=>x.d!=null && x.d>=3).sort((a,b)=>b.d-a.d);
   const zona = S.net==='all'?'a tota la xarxa':S.net==='BV'?'a Barcelona-Vallès':'a Llobregat-Anoia';
@@ -1603,7 +1634,8 @@ function mostrarPestanya(){
   document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on',x.dataset.mode===S.mode));
   $('hdrLate').style.display=S.mode==='late'?'block':'none'; $('hdrSt').style.display=S.mode==='station'?'block':'none';
   $('hdrFav').style.display=S.mode==='favs'?'block':'none';
-  $('quan').style.display=(S.mode==='favs'||S.mode==='station')?'flex':'none';
+  $('hdrVi').style.display=S.mode==='viatge'?'block':'none';
+  $('quan').style.display=(S.mode==='favs'||S.mode==='station'||S.mode==='viatge')?'flex':'none';
   $('list').style.display=S.mode==='avisos'?'none':'block'; $('incid').style.display=S.mode==='avisos'?'block':'none';
 }
 /* Cercador d'estacions: suggeriments mentre escrius, sense accents ni majúscules ("sant cugat del vallès" → Sant Cugat Centre) */
@@ -1653,7 +1685,7 @@ map.on('dragstart',()=>{ S.follow=false; });
 /* ================= ARRANQUE ================= */
 
 /* ===== Mòbil: barra de tasques i full inferior ===== */
-const TITOLS={favs:'★ Preferides', late:'Retards', station:'Trens', avisos:'Avisos'};
+const TITOLS={favs:'★ Preferides', late:'Retards', station:'Trens', viatge:'Viatge', avisos:'Avisos'};
 const esMobil=()=>window.innerWidth<=900;
 function obrirFull(mode){
   S.mode=mode; mostrarPestanya();
@@ -1760,7 +1792,7 @@ function marcarQuan(){
   dt.min=isoD(dataDia(0))+'T00:00';
   if(S.cal){ const mx=[...S.cal.keys()].sort().pop(); if(mx) dt.max=isoD(mx)+'T23:55'; }
 }
-const repintarQuan = () => { marcarQuan(); if(S.mode==='favs') pintarFavs(); else pintarEstacion(); };
+const repintarQuan = () => { marcarQuan(); if(S.mode==='favs') pintarFavs(); else if(S.mode==='viatge') pintarViatge(); else pintarEstacion(); };
 $('qAra').addEventListener('click',()=>{ S.quan=null; repintarQuan(); });
 $('quanDT').addEventListener('change',()=>{
   const v=$('quanDT').value; if(!v) return;
@@ -1922,6 +1954,135 @@ $('locBtn').onclick=()=>{
       : "No s'ha pogut saber on ets. Torna-ho a provar");
   });
 };
+
+/* ===== Viatge de A a B: trens directes i amb un transbord, amb l'hora real ===== */
+S.vi=(()=>{ try{ return JSON.parse(localStorage.getItem('tev-viatge'))||{}; }catch(e){ return {}; } })();
+let viCamp=null, viOpts=[], viSel=-1;
+const desaVi=()=>{ try{ localStorage.setItem('tev-viatge', JSON.stringify({o:S.vi.o, d:S.vi.d})); }catch(e){} };
+const secAra=()=>{ const p=new Date().toLocaleTimeString('en-GB',{timeZone:'Europe/Madrid',hourCycle:'h23'}).split(':').map(Number); return p[0]*3600+p[1]*60+p[2]; };
+function omplirVi(){ $('viO').value=S.vi.o?S.stops[S.vi.o]?.name||'':''; $('viD').value=S.vi.d?S.stops[S.vi.d]?.name||'':''; }
+function suggVi(inp){
+  viCamp=inp; const q=$(inp).value, box=$('viSugg'); box.classList.toggle('o', inp==='viD');
+  const cur=S.vi[inp==='viO'?'o':'d']; if(!q.trim() || (cur && q===S.stops[cur]?.name)){ box.innerHTML=''; box.classList.remove('on'); return; }
+  const r=cercarEstacions(q);
+  box.innerHTML = r.length ? r.map(c=>`<button type="button" data-vs="${esc(c)}"><span>${esc(S.stops[c].name)}</span><span class="sl">${lineasEstacion(c).slice(0,4).map(l=>`<i style="background:${colorOf(l)}"></i>`).join('')}</span></button>`).join('') : '<div class="sv">Cap estació amb aquest nom</div>';
+  box.classList.add('on');
+}
+function triarVi(camp, c){ S.vi[camp==='viO'?'o':'d']=c; if(camp==='viO') S.vi.aPeu=null; desaVi(); omplirVi(); $('viSugg').innerHTML=''; $('viSugg').classList.remove('on'); $(camp).blur();
+  if(camp==='viO' && !S.vi.d) $('viD').focus(); else pintarViatge(); }
+['viO','viD'].forEach(id=>{
+  $(id).addEventListener('input',()=>suggVi(id));
+  $(id).addEventListener('focus',()=>{ $(id).select(); suggVi(id); });
+  $(id).addEventListener('blur',()=>setTimeout(()=>{ if(viCamp===id){ $('viSugg').classList.remove('on'); omplirVi(); } },150));
+  $(id).addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); const r=cercarEstacions($(id).value); if(r[0]) triarVi(id,r[0]); } });
+});
+$('viSugg').addEventListener('pointerdown',e=>{ const b=e.target.closest('[data-vs]'); if(b){ e.preventDefault(); triarVi(viCamp,b.dataset.vs); } });
+$('viSwap').onclick=()=>{ [S.vi.o,S.vi.d]=[S.vi.d,S.vi.o]; S.vi.aPeu=null; desaVi(); omplirVi(); pintarViatge(); };
+$('viLoc').onclick=()=>{
+  if(!('geolocation' in navigator) || !window.isSecureContext){ avMsg("Aquest navegador no pot saber on ets"); return; }
+  $('viLoc').classList.add('busy');
+  const ok=pos=>{ $('viLoc').classList.remove('busy'); const {latitude:la,longitude:lo}=pos.coords; S.jo=[la,lo];
+    const top=S.parents.map(c=>({c,d:distM(la,lo,S.stops[c].lat,S.stops[c].lon)})).sort((a,b)=>a.d-b.d)[0]; if(!top) return;
+    S.vi.o=top.c; S.vi.aPeu={m:top.d, min:Math.max(1,Math.round(top.d/80))}; desaVi(); omplirVi(); if(!S.vi.d) $('viD').focus(); else pintarViatge(); };
+  navigator.geolocation.getCurrentPosition(ok, err=>{ if(err.code===1){ $('viLoc').classList.remove('busy'); avMsg("Has de donar permís d'ubicació"); return; }
+    navigator.geolocation.getCurrentPosition(ok, ()=>{ $('viLoc').classList.remove('busy'); avMsg("No s'ha pogut saber on ets"); }, {enableHighAccuracy:false,timeout:25000,maximumAge:600000}); },
+    {enableHighAccuracy:true,timeout:8000,maximumAge:60000});
+};
+function planificar(O, D, data, des){
+  const actius=S.cal?.get(data); const fins=des+3*3600, MINT=120, MAXT=45*60;
+  const viu = tid => !actius || actius.has(tid.split('|')[0]);
+  const posD=new Map(), desO=[];
+  S.sched.forEach((a,tid)=>{ if(!viu(tid)) return;
+    let jd=-1; for(let k=a.length-1;k>=0;k--){ if(parentOf(a[k].stop)===D){ jd=k; break; } }
+    if(jd>0) posD.set(tid,jd);
+    for(let k=0;k<a.length-1;k++){ if(parentOf(a[k].stop)===O){ if(a[k].dep>=des && a[k].dep<=fins) desO.push({tid,i:k,dep:a[k].dep}); break; } }
+  });
+  const opts=[];
+  // directes
+  desO.forEach(x=>{ const j=posD.get(x.tid); if(j!=null && j>x.i) opts.push({legs:[{tid:x.tid,a:x.i,b:j}], dep:x.dep, arr:S.sched.get(x.tid)[j].arr}); });
+  // amb un transbord: índex de sortides cap a D per estació
+  const capD=new Map();
+  posD.forEach((jd,tid)=>{ const a=S.sched.get(tid); for(let m=0;m<jd;m++){ const st=parentOf(a[m].stop); let v=capD.get(st); if(!v){v=[];capD.set(st,v);} v.push({tid,m,dep:a[m].dep,arr:a[jd].arr,jd}); } });
+  desO.sort((p,q)=>p.dep-q.dep).slice(0,40).forEach(x=>{
+    if(posD.has(x.tid) && posD.get(x.tid)>x.i) return;   // ja hi va directe
+    const a=S.sched.get(x.tid); let millor=null;
+    for(let k=x.i+1;k<a.length;k++){
+      const X=parentOf(a[k].stop); if(X===O) continue; const arr1=a[k].arr;
+      (capD.get(X)||[]).forEach(y=>{ if(y.tid===x.tid || y.dep<arr1+MINT || y.dep>arr1+MAXT) return;
+        if(!millor || y.arr<millor.arr || (y.arr===millor.arr && y.dep>millor.legs[1]&&false)) millor={legs:[{tid:x.tid,a:x.i,b:k},{tid:y.tid,a:y.m,b:y.jd}], dep:x.dep, arr:y.arr, X}; });
+    }
+    if(millor) opts.push(millor);
+  });
+  // temps real (avui)
+  const avui=data===todayStr(), mid=gtfsMidnight(data);
+  opts.forEach(o=>{ o.legs.forEach(l=>{ const sch=S.sched.get(l.tid); l.depP=mid+sch[l.a].dep*1000; l.arrP=mid+sch[l.b].arr*1000; l.depR=l.depP; l.arrR=l.arrP;
+      if(avui){ try{ const par=paradasViaje(l.tid); if(par){ const pa=par[l.a], pb=par[l.b]; if(pa&&pa.estD!=null){ l.depR=pa.estD; l.rt=true; } if(pb&&pb.est!=null){ l.arrR=pb.est; l.rt=true; } } }catch(e){} }
+      l.lin=(S.trips.get(l.tid)?.route)||S.trains.find(t=>t.id===l.tid)?.lin||''; });
+    o.depR=o.legs[0].depR; o.arrR=o.legs[o.legs.length-1].arrR; });
+  // si el transbord ja no dona temps per culpa del retard, fora
+  const bons=opts.filter(o=>o.legs.length<2 || o.legs[1].depR-o.legs[0].arrR>=60000);
+  // millors opcions: per hora d'arribada; es treu la que surt abans i arriba igual o més tard que una altra
+  bons.sort((p,q)=>p.arrR-q.arrR || q.depR-p.depR || p.legs.length-q.legs.length);
+  const out=[]; bons.forEach(o=>{ if(out.some(p=>p.depR>=o.depR && p.arrR<=o.arrR && p.legs.length<=o.legs.length)) return; out.push(o); });
+  return out.slice(0,7);
+}
+async function pintarViatge(){
+  if(S.mode!=='viatge') return;
+  const L_=$('list'), O=S.vi.o, D=S.vi.d;
+  if(document.activeElement!==$('viO') && document.activeElement!==$('viD')) omplirVi();
+  if(!O || !D){ $('viDesc').textContent=''; L_.innerHTML='<div class="empty">Tria d\'on surts i on vas. També pots tocar <b>📍</b> per sortir de l\'estació més propera.</div>'; return; }
+  if(O===D){ L_.innerHTML='<div class="empty">L\'origen i el destí són la mateixa estació.</div>'; return; }
+  if(!S.horarios || !S.cal){ L_.innerHTML='<div class="empty">Carregant horaris…</div>'; return; }
+  const q=S.quan, data=q?dataDia(q.dia):todayStr();
+  let des=q?q.sec:secAra(); if(!q && S.vi.aPeu) des+=S.vi.aPeu.min*60;
+  const peu=S.vi.aPeu?` · ${fmtDist(S.vi.aPeu.m)} a peu fins a l'estació (${S.vi.aPeu.min} min)`:'';
+  $('viDesc').innerHTML = (q?`<b>${esc(nomDia(data).replace(/^[AD]/,c=>c.toLowerCase()))} a partir de les ${secHHMM(q.sec)}</b>`:'Propers trens · temps real')+peu;
+  viOpts=planificar(O, D, data, Math.max(0,des-60));
+  await completarViajes([...new Set(viOpts.flatMap(o=>o.legs.map(l=>l.tid)))]);
+  if(S.mode!=='viatge' || S.vi.o!==O || S.vi.d!==D) return;
+  viOpts.forEach(o=>o.legs.forEach(l=>{ if(!l.lin) l.lin=S.trips.get(l.tid)?.route||'?'; }));
+  const ara=Date.now();
+  L_.innerHTML = viOpts.length ? viOpts.map((o,i)=>{
+    const dur=Math.round((o.arrR-o.depR)/60000), falta=Math.round((o.depR-ara)/60000);
+    const ret=Math.round((o.legs[0].depR-o.legs[0].depP)/60000), retA=Math.round((o.arrR-o.legs[o.legs.length-1].arrP)/60000);
+    const legs=o.legs.map((l,k)=>`<span class="lin" style="background:${colorOf(l.lin)}">${esc(l.lin)}</span>${k<o.legs.length-1?` <span>canvi a ${esc(nom(S.sched.get(l.tid)[l.b].stop))} · ${Math.max(1,Math.round((o.legs[k+1].depR-l.arrR)/60000))} min</span> →`:''}`).join(' ');
+    const rt=o.legs.some(l=>l.rt);
+    const estat = !rt ? 'Segons horari' : (ret>=1||retA>=1) ? `<span class="${retA>=10?'b':retA>=3?'w':'ok'}">+${Math.max(ret,retA)} min de retard</span> · temps real` : '<span class="ok">A l\'hora</span> · temps real';
+    return `<div class="vopt ${i===viSel?'on':''}" data-vi="${i}">
+      <div class="vt"><b>${hm(o.depR)}</b><span class="ar">→ ${hm(o.arrR)}</span><span class="dur">${dur} min</span></div>
+      <div class="vlegs">${o.legs.length>1?'':'<span>Directe</span> · '}${legs}</div>
+      <div class="vm">${!q && falta>=0 && falta<=90 ? (falta<1?'Surt ara':`Surt d'aquí a ${falta} min`)+' · ':''}${estat}</div></div>`;
+  }).join('') : `<div class="empty">No hi ha cap tren de ${esc(nom(O))} a ${esc(nom(D))} en les properes 3 hores (directe o amb un transbord).</div>`;
+  if(viSel>=0 && viSel<viOpts.length) dibuixarViatge(viOpts[viSel], false);
+}
+function trossShape(pts, A, B){
+  if(pts.length<2) return [[A.lat,A.lon],[B.lat,B.lon]];
+  const sh=prepararShape(pts), pa=proyectar(sh,A.lat,A.lon), pb=proyectar(sh,B.lat,B.lon,pa.i);
+  if(pb.s<=pa.s || pa.d>800 || pb.d>800) return null;
+  return [puntoEn(sh,pa.s), ...pts.slice(pa.i+1, pb.i+1), puntoEn(sh,pb.s)];
+}
+function dibuixarViatge(o, encuadra){
+  capaRuta.clearLayers(); S.selRuta=null;
+  const tots=[];
+  o.legs.forEach((l,k)=>{
+    const sch=S.sched.get(l.tid), A=S.stops[parentOf(sch[l.a].stop)], B=S.stops[parentOf(sch[l.b].stop)], col=colorOf(l.lin);
+    let pts=trossShape(puntsRuta(l.tid), A, B);
+    if(!pts) pts=sch.slice(l.a,l.b+1).map(s=>S.stops[parentOf(s.stop)]).filter(s=>s&&isFinite(s.lat)).map(s=>[s.lat,s.lon]);
+    tots.push(...pts);
+    L.polyline(pts,{color:'#fff',weight:11,opacity:1,interactive:false}).addTo(capaRuta);
+    L.polyline(pts,{color:col,weight:6,opacity:1,interactive:false}).addTo(capaRuta);
+    sch.slice(l.a+1,l.b).forEach(s=>{ const e=S.stops[parentOf(s.stop)]; if(e) L.circleMarker([e.lat,e.lon],{radius:4,color:col,weight:2,fillColor:'#fff',fillOpacity:1,interactive:false}).addTo(capaRuta); });
+    const punt=(e,t,txt,extrem)=>L.circleMarker([e.lat,e.lon],{radius:7,color:col,weight:3,fillColor:extrem?col:'#fff',fillOpacity:1})
+      .bindTooltip(`<b>${esc(e.name)}</b> · ${txt} ${hm(t)}`,{permanent:true,direction:'top',className:'rtt',offset:[0,-6]}).addTo(capaRuta);
+    punt(A,l.depR,k===0?'surt':'canvi, surt',k===0);
+    if(k===o.legs.length-1) punt(B,l.arrR,'arriba',true);
+  });
+  if(encuadra && tots.length>1){ const gran=window.innerWidth>900;
+    map.fitBounds(L.latLngBounds(tots), gran?{paddingTopLeft:[110,150],paddingBottomRight:[500,70]}:{paddingTopLeft:[80,150],paddingBottomRight:[80,170]}); }
+}
+$('list').addEventListener('click',e=>{ const it=e.target.closest('.vopt[data-vi]'); if(!it) return;
+  viSel=+it.dataset.vi; document.querySelectorAll('.vopt').forEach(x=>x.classList.toggle('on',x===it));
+  const o=viOpts[viSel]; if(!o) return; if(window.innerWidth<=900) tancarFull(); dibuixarViatge(o, true); });
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
 async function ciclo(forcar){
@@ -1943,7 +2104,7 @@ async function ciclo(forcar){
     aplicarVies(); pintarEstaciones(); zoomCls(); encuadrar();
     await ciclo(true);
     // Los retrasos exactos aparecen en cuanto llega el horario
-    cargarHorarios().then(()=>ciclo()).catch(e=>console.warn('Sin horario', e));
+    cargarHorarios().then(()=>{ if(S.mode==='viatge') pintarViatge(); return ciclo(); }).catch(e=>console.warn('Sin horario', e));
   }catch(e){
     console.error(e);
     $('loadTxt').innerHTML='No s\'han pogut carregar les dades d\'FGC.<br>Comprova la connexió i torna a carregar la pàgina.<br><small style="opacity:.6">'+esc(String(e&&e.message||e)).slice(0,200)+'</small>';
@@ -1961,7 +2122,7 @@ async function ciclo(forcar){
   setInterval(ciclo, REFRESH);
   setInterval(cargarAvisos, 600000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) ciclo(); });
-  setInterval(()=>{ if(S.mode==='station') pintarEstacion(); }, 30000);
+  setInterval(()=>{ if(S.mode==='station') pintarEstacion(); if(S.mode==='viatge' && !S.quan) pintarViatge(); }, 30000);
   setInterval(()=>{ if(S.selEst) refrescarEstacion(false); }, 15000);
 })();
 
