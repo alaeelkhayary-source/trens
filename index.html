@@ -459,7 +459,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 27</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 28</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -940,11 +940,12 @@ function aplicarVies(){
     if(!rutes.has(clau)) rutes.set(clau,{tid:t.id, lin:t.lin});
   });
   S.estAct=est;
-  const sig=[...rutes.keys()].sort().join(',')+'|'+esFosc();
+  rutes.forEach(r=>{ r.pts=puntsRuta(r.tid); });
+  const sig=[...rutes.entries()].map(([k,r])=>k+':'+r.pts.length).sort().join(',')+'|'+esFosc();
   if(sig!==S.viesSig){
     S.viesSig=sig; capaViesAct.clearLayers();
     const fons=[], cols=[];
-    rutes.forEach(({tid,lin})=>{ const pts=puntsRuta(tid); if(pts.length<2) return;
+    rutes.forEach(({lin,pts})=>{ if(pts.length<2) return;
       fons.push(L.polyline(pts,{color:esFosc()?'#0f1114':'#ffffff',weight:7,opacity:.95,interactive:false}));
       cols.push(L.polyline(pts,{color:colorOf(lin),weight:3.5,opacity:.9,interactive:false})); });
     fons.concat(cols).forEach(l=>l.addTo(capaViesAct));
@@ -1490,8 +1491,15 @@ function cerrar(){ $('card').classList.remove('show','exp'); const habiaEst=!!S.
 const capaRuta=L.layerGroup().addTo(map);
 function puntsRuta(tid){
   const info=S.trips.get(tid); const sh=info?.shape!=null?S.shapes.get(String(info.shape)):null;
-  if(sh) return sh.pts;
-  const a=S.sched.get(tid)||[]; return a.map(st=>S.stops[parentOf(st.stop)]||S.stops[st.stop]).filter(s=>s&&isFinite(s.lat)).map(s=>[s.lat,s.lon]);
+  if(sh && sh.pts && sh.pts.length>1) return sh.pts;
+  const deParades = a => (a||[]).map(st=>S.stops[parentOf(st.stop)]||S.stops[st.stop]).filter(s=>s&&isFinite(s.lat)).map(s=>[s.lat,s.lon]);
+  let pts=deParades(S.sched.get(tid)); if(pts.length>1) return pts;
+  const mo=S.motion[tid]; if(mo && mo.sh && mo.sh.pts && mo.sh.pts.length>1) return mo.sh.pts;   // traçat del moviment del tren
+  try{ pts=deParades(paradasViaje(tid)); }catch(e){ pts=[]; }                                         // parades en temps real
+  if(pts.length>1) return pts;
+  const t=S.trains.find(x=>x.id===tid);                                                               // origen, properes parades i destí
+  if(t){ pts=[t.origen,...(t.prox||[]),t.desti].filter(Boolean).map(c=>S.stops[parentOf(c)||c]||S.stops[c]).filter(s=>s&&isFinite(s.lat)).map(s=>[s.lat,s.lon]); }
+  return pts;
 }
 function dibuixarTrajecte(tid, encuadra, data){
   capaRuta.clearLayers();
