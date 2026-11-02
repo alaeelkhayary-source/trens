@@ -389,6 +389,15 @@ aside .desc{color:var(--muted);margin-top:10px;font-size:13px}
 .qsel .qch{color:var(--muted);font-size:12px}
 .qsel.on{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
 .qsel input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:0}
+.quan{position:relative}
+body.dpc .qsel input{display:none}
+.qpop{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:40;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 32px rgba(16,24,40,.18);padding:10px;display:flex;flex-direction:column;gap:8px}
+.qpop[hidden]{display:none}
+.qpr{display:flex;gap:6px;align-items:center}
+.qpr button,.qpr input{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:500 14px var(--sans);cursor:pointer}
+.qpr input{flex:1;min-width:0}
+.qpr button.on,.qpr .ok{background:var(--text);color:var(--panel);border-color:var(--text)}
+.qpr .ok{flex:1}
 #qAra{flex:none;padding:0 14px;border-radius:14px;border:1px solid var(--text);background:var(--text);color:#fff;font:500 13px var(--sans);cursor:pointer}
 .big.hora{color:var(--text);font-size:16px;font-weight:600}
 /* Donacions */
@@ -491,13 +500,18 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
       <div class="quan" id="quan" style="display:none">
         <label class="qsel" id="qsel"><span class="qic">🕒</span><span class="qtx"><b id="qselTxt">Ara</b><small id="qselSub">Toca per triar dia i hora</small></span><span class="qch">▾</span><input type="datetime-local" id="quanDT" step="300" aria-label="Tria dia i hora"></label>
         <button data-q="ara" id="qAra" style="display:none">↺ Ara</button>
+        <div class="qpop" id="qpop" hidden>
+          <div class="qpr"><button type="button" data-qd="0">Avui</button><button type="button" data-qd="1">Demà</button><input type="date" id="qpD" aria-label="Dia"></div>
+          <div class="qpr"><button type="button" data-qh="-30">−30′</button><input type="time" id="qpT" step="300" aria-label="Hora"><button type="button" data-qh="30">+30′</button></div>
+          <div class="qpr"><button type="button" id="qpOk" class="ok">Fet</button></div>
+        </div>
       </div>
     </header>
     <div class="list" id="list"></div>
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 34</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span style="color:var(--dim)">versió 1/11 · 35</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1794,14 +1808,30 @@ function marcarQuan(){
   if(S.cal){ const mx=[...S.cal.keys()].sort().pop(); if(mx) dt.max=isoD(mx)+'T23:55'; }
 }
 const repintarQuan = () => { marcarQuan(); if(S.mode==='favs') pintarFavs(); else if(S.mode==='viatge') pintarViatge(); else pintarEstacion(); };
-$('qAra').addEventListener('click',()=>{ S.quan=null; repintarQuan(); });
+$('qAra').addEventListener('click',()=>{ S.quan=null; $('qpop').hidden=true; repintarQuan(); });
 $('quanDT').addEventListener('change',()=>{
   const v=$('quanDT').value; if(!v) return;
   const [d,t]=v.split('T'); const off=offDe(d.replace(/-/g,'')); if(off<0) return;
   const [hh,mm]=(t||'08:00').split(':').map(Number);
   S.quan={dia:off, sec:hh*3600+mm*60}; repintarQuan();
 });
-$('qsel').addEventListener('click',()=>{ const i=$('quanDT'); try{ i.showPicker&&i.showPicker(); }catch(e){} });
+// a l'ordinador: panell propi amb dia i hora (el Safari de Mac només ensenya el calendari, sense l'hora)
+if(HOVER) document.body.classList.add('dpc');
+function obrirQpop(){ const q=S.quan, d=q?dataDia(q.dia):dataDia(0);
+  $('qpD').value=isoD(d); $('qpD').min=isoD(dataDia(0)); if(S.cal){ const mx=[...S.cal.keys()].sort().pop(); if(mx) $('qpD').max=isoD(mx); }
+  $('qpT').value=q?secHHMM(q.sec):secHHMM(ara5()); marcarQpop(); $('qpop').hidden=false; }
+function marcarQpop(){ const off=offDe($('qpD').value.replace(/-/g,'')); document.querySelectorAll('#qpop [data-qd]').forEach(b=>b.classList.toggle('on', +b.dataset.qd===off)); }
+function aplicarQpop(){ const d=$('qpD').value, t=$('qpT').value; if(!d||!t) return; const off=offDe(d.replace(/-/g,'')); if(off<0) return;
+  const [hh,mm]=t.split(':').map(Number); S.quan={dia:off, sec:hh*3600+mm*60}; marcarQpop(); repintarQuan(); }
+$('qsel').addEventListener('click',e=>{
+  if(HOVER){ e.preventDefault(); if($('qpop').hidden) obrirQpop(); else $('qpop').hidden=true; return; }
+  const i=$('quanDT'); try{ i.showPicker&&i.showPicker(); }catch(err){} });
+$('qpop').addEventListener('click',e=>{ e.stopPropagation();
+  const d=e.target.closest('[data-qd]'); if(d){ $('qpD').value=isoD(dataDia(+d.dataset.qd)); aplicarQpop(); return; }
+  const hq=e.target.closest('[data-qh]'); if(hq){ const [hh,mm]=($('qpT').value||secHHMM(ara5())).split(':').map(Number); let s=hh*3600+mm*60+(+hq.dataset.qh)*60; s=Math.max(0,Math.min(86100,s)); $('qpT').value=secHHMM(s); aplicarQpop(); return; }
+  if(e.target.id==='qpOk') $('qpop').hidden=true; });
+$('qpD').addEventListener('change',aplicarQpop); $('qpT').addEventListener('change',aplicarQpop);
+document.addEventListener('click',e=>{ if(!$('qpop').hidden && !e.target.closest('#quan')) $('qpop').hidden=true; });
 marcarQuan();
 (()=>{const c=$('chips');const f=()=>c.classList.toggle('fi',c.scrollLeft+c.clientWidth>=c.scrollWidth-4);c.addEventListener('scroll',f,{passive:true});['touchstart','touchmove','pointerdown','pointermove','mousedown','wheel'].forEach(t=>c.addEventListener(t,e=>e.stopPropagation(),{passive:true}));new ResizeObserver(f).observe(c);new MutationObserver(f).observe(c,{childList:true});})();
 
