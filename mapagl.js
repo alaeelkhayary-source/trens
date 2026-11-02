@@ -239,7 +239,7 @@ Marker.prototype=Object.assign(Object.create(Ev),{
   getLatLng(){ return this._ll; },
   setLatLng(ll){ const p=toLL(ll); this._ll.lat=p.lat; this._ll.lng=p.lng; if(this._m) this._m.setLngLat([p.lng,p.lat]); return this; },
   setIcon(icon){ this.options.icon=icon; this._apply(icon); return this; },
-  setZIndexOffset(z){ this._el.style.zIndex=z>0?z:''; return this; },
+  setZIndexOffset(z){ this._el.style.zIndex=z>0?z:'5'; return this; },
   getElement(){ return this._el; },
   bindTooltip(){ return this; }
 });
