@@ -90,6 +90,7 @@ b,strong{font-weight:600}
 
 /* Trenes bien visibles */
 .tw{position:absolute;left:0;top:0;transform:translate(-50%,-50%)}
+.lmk{will-change:transform}   /* cada tren a la seva capa: moure'l no obliga a repintar */
 /* fletxa de direcció: un petit triangle del color de la línia, a la vora del globus, cap on va el tren */
 .tdir{position:absolute;left:50%;top:50%;width:15px;height:12px;overflow:visible;pointer-events:none;display:none;fill:#1d2939;stroke:#fff;stroke-width:1.6px;stroke-linejoin:round;paint-order:stroke;
   transform:translate(-50%,-50%) translate(var(--dx,0px),var(--dy,0px)) rotate(var(--a,0deg))}
@@ -97,7 +98,7 @@ html.dark .tdir{fill:#fff;stroke:#111}
 .tw.dir .tdir{display:block}
 .tw.mini:not(.sel) .tdir{display:none}
 #map.z10 .tw:not(.sel) .tdir{width:11px;height:9px}
-.tpill{position:relative;display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;background:var(--c);border:2.5px solid #fff;color:#fff;font:700 13px var(--sans);letter-spacing:.2px;white-space:nowrap;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.35),0 6px 16px rgba(0,0,0,.18);font-variant-numeric:tabular-nums}
+.tpill{position:relative;display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;background:var(--c);border:2.5px solid #fff;color:#fff;font:700 13px var(--sans);letter-spacing:.2px;white-space:nowrap;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.35);font-variant-numeric:tabular-nums}
 .tpill .td{background:#fff;color:var(--ok);border-radius:999px;padding:1px 6px;font-size:12px;margin-right:-5px}
 .tpill.w .td{color:var(--warn)} .tpill.b .td{color:#fff;background:var(--bad)}
 .pulse{display:none;position:absolute;left:50%;top:50%;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:var(--c);opacity:.35;animation:tpulse 2s ease-out infinite;pointer-events:none}
@@ -236,8 +237,8 @@ body.can-install .instbtn{display:flex}
 .tick[hidden]{display:none}
 .tick.w{background:#b54708}
 .tick .tl{flex:none;display:flex;align-items:center;gap:6px;height:100%;padding:0 12px;background:rgba(0,0,0,.22);font:800 12px var(--sans);letter-spacing:.8px;text-transform:uppercase;white-space:nowrap}
-.tick .tv{flex:1;min-width:0;overflow:hidden;height:100%;display:flex;align-items:center;-webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent)}
-.tick .tt{display:inline-flex;white-space:nowrap;will-change:transform;animation:tickmou var(--dur,30s) linear infinite}
+.tick .tv{flex:1;min-width:0;overflow:hidden;height:100%;display:flex;align-items:center;contain:paint}
+.tick .tt{display:inline-flex;white-space:nowrap;will-change:transform;backface-visibility:hidden;animation:tickmou var(--dur,30s) linear infinite}
 .tick .tt span{padding-right:56px}
 .tick .tt b{font-weight:800}
 .tick:hover .tt{animation-play-state:paused}
@@ -585,7 +586,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 55</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 56</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1270,10 +1271,11 @@ function pintarTrenes(){
     const html=`<div class="tw ${S.sel===t.id?'sel':''}${meuTids().has(t.id)?' meu':''}" style="--c:${col}">
       <div class="pulse"></div>
       <div class="tpill ${c}"><span class="tl">${esc(t.lin)}</span>${d!=null&&d!==0?`<span class="td">${fmtD(d)}′</span>`:''}</div><svg class="tdir" viewBox="-1 -6 14 12"><path d="M0,-5 L12,0 L0,5 L3,0 Z"/></svg></div>`;
-    const icon=L.divIcon({className:'tm',html,iconSize:[0,0],iconAnchor:[0,0]});
     const m=S.markers[t.id];
-    if(m){ m.setIcon(icon); orientar(t.id); if(!S.motion[t.id]) animar(m,t.pos); m.setZIndexOffset(S.sel===t.id?1000:meuTids().has(t.id)?800:(c==='b'?500:c==='w'?300:0)); }
-    else S.markers[t.id]=L.marker(S.motion[t.id]?puntoEn(S.motion[t.id].sh, sEn(S.motion[t.id],Date.now())):t.pos,{icon}).on('click',()=>abrirTren(t.id,true)).addTo(capaTrenes);
+    if(m && m._html===html){ if(!S.motion[t.id]) animar(m,t.pos); return; }   // res no ha canviat: no es toca el DOM
+    const icon=L.divIcon({className:'tm',html,iconSize:[0,0],iconAnchor:[0,0]});
+    if(m){ m._html=html; m.setIcon(icon); orientar(t.id); if(!S.motion[t.id]) animar(m,t.pos); m.setZIndexOffset(S.sel===t.id?1000:meuTids().has(t.id)?800:(c==='b'?500:c==='w'?300:0)); }
+    else { S.markers[t.id]=L.marker(S.motion[t.id]?puntoEn(S.motion[t.id].sh, sEn(S.motion[t.id],Date.now())):t.pos,{icon}).on('click',()=>abrirTren(t.id,true)).addTo(capaTrenes); S.markers[t.id]._html=html; }
   });
   Object.keys(S.markers).forEach(id=>{ if(!vivos.has(id)){ capaTrenes.removeLayer(S.markers[id]); delete S.markers[id]; } });
   desamuntegar();
@@ -1299,7 +1301,10 @@ function orientar(id, recalc){
   let ang=recalc||S.dirAng[id]==null ? angleTren(id) : S.dirAng[id];
   if(ang==null){ el.classList.remove('dir'); return; }
   S.dirAng[id]=ang;
-  const pill=el.querySelector('.tpill'); const w=(pill.offsetWidth||40)/2+9, hh=(pill.offsetHeight||28)/2+9;
+  const pill=el.querySelector('.tpill'); const mida=(el.classList.contains('sel')?'s':'')+(document.getElementById('map').className);
+  if(!el._mida || el._midaK!==mida){ el._mida=[pill.offsetWidth||40, pill.offsetHeight||28]; el._midaK=mida; }   // es mesura un sol cop (llegir mides obliga el navegador a recalcular)
+  const w=el._mida[0]/2+9, hh=el._mida[1]/2+9;
+  if(el._ang!=null && Math.abs(el._ang-ang)<0.03 && el.classList.contains('dir')) return; el._ang=ang;
   // punt a la vora del globus (el·lipse) en la direcció del tren
   const c=Math.cos(ang), s=Math.sin(ang), k=1/Math.sqrt((c*c)/(w*w)+(s*s)/(hh*hh));
   el.style.setProperty('--dx',(c*k).toFixed(1)+'px'); el.style.setProperty('--dy',(s*k).toFixed(1)+'px'); el.style.setProperty('--a',(ang*180/Math.PI).toFixed(1)+'deg');
@@ -1320,6 +1325,8 @@ function desamuntegar(){
     if(!xoca) fets.push(o); });
   // els trens fan d'obstacle: els noms que quedarien a sota s'aparten o s'amaguen
   try{ const lluny=document.getElementById('map').classList.contains('z10');
+    const firma=v.map(o=>Math.round(o.x/12)+','+Math.round(o.y/12)+(o.el.classList.contains('mini')?'m':'')).join('|')+lluny;
+    if(firma===desamuntegar._f) return; desamuntegar._f=firma;   // els trens no s'han mogut prou: no cal tornar a col·locar els noms
     map.setObstacles(v.map(o=>{ const ll=map.ml.unproject([o.x,o.y]), petit=o.el.classList.contains('mini')||(lluny&&!o.el.classList.contains('sel'));
       return {lng:ll.lng, lat:ll.lat, t: petit?'•':(o.el.querySelector('.tpill')?.textContent||'S1').trim()+'  ', s: petit?10:14}; })); }catch(e){}
 }
