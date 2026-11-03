@@ -39,7 +39,7 @@ function temaVol(){var t=null;try{t=localStorage.getItem('tev-tema');}catch(e){}
 <script src="i18n.js?v=1"></script>
 <link rel="stylesheet" href="vendor/maplibre-gl-4.7.1/maplibre-gl.css">
 <script src="vendor/maplibre-gl-4.7.1/maplibre-gl.js"></script>
-<script src="mapagl.js?v=8"></script>
+<script src="mapagl.js?v=9"></script>
 <style>
 :root{
   --bg:#f4f5f7; --panel:#ffffff; --card:#f6f7f9; --line:#e6e9ee; --track:#d3d9e0;
@@ -586,7 +586,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 57</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 58</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -901,7 +901,8 @@ function prepararMovimiento(t){
   if(keys.length<2){ delete S.motion[t.id]; return; }
   if(prev) keys.forEach(k=>{ if(k.nom && prev.keys.some(o=>o.hecho && o.nom===k.nom && o.tipo===k.tipo)) k.hecho=true; });
   keys.forEach(k=>{ if(k.nom && k.t<=ahora) k.hecho=true; });
-  S.motion[t.id]={sh, keys, realS:real.s};
+  // transició suau: durant 2,5 s es barreja el moviment anterior amb el nou (sense acceleracions ni frenades brusques)
+  S.motion[t.id]={sh, keys, realS:real.s, ant: prev && prev.sh===sh ? {sh:prev.sh, keys:prev.keys} : null, tb:ahora};
 }
 function velocidadMov(id){
   const mo=S.motion[id]; if(!mo) return null; const a=Date.now();
@@ -910,12 +911,17 @@ function velocidadMov(id){
 let mapaMovent=false, ultimMov=0;
 map.on('movestart zoomstart',()=>{ if(!map._panning) mapaMovent=true; });
 map.on('moveend zoomend',()=>{ if(map._panning) return; mapaMovent=false; moverTrenes(true); });
+function sSuau(mo, t){
+  if(!mo.ant || t>=mo.tb+2500) return sEn(mo,t);
+  const x=Math.max(0,(t-mo.tb)/2500), w=x*x*(3-2*x);
+  return sEn(mo.ant,t)*(1-w)+sEn(mo,t)*w;
+}
 function moverTrenes(forcar){
   const ahora=Date.now();
   const vista=map.getBounds().pad(.25);
   for(const id in S.markers){
     const mo=S.motion[id]; if(!mo) continue;
-    const ll=puntoEn(mo.sh, sEn(mo, ahora));
+    const ll=puntoEn(mo.sh, sSuau(mo, ahora));
     const sel=S.sel===id;
     if(!forcar && !sel && !vista.contains(ll) && !vista.contains(S.markers[id].getLatLng())) continue;
     const seguint = S.follow && sel && !map.ml.isMoving() && !map.ml.isEasing();
@@ -927,7 +933,7 @@ function moverTrenes(forcar){
 // moviment suau (~30 fps), aturat mentre arrossegues/fas zoom o si la pestanya no es veu
 (function bucle(t){
   requestAnimationFrame(bucle);
-  if(mapaMovent || document.hidden || (t-ultimMov<33 && !(S.follow&&S.sel))) return;   // seguint un tren: cada imatge
+  if(mapaMovent || document.hidden || t-ultimMov<14) return;   // cada imatge (60 per segon): moviment suau
   ultimMov=t; moverTrenes();
 })(0);
 
@@ -1153,6 +1159,7 @@ async function cargarRT(){
   try{ const u=tuMeta.results[0].file.url; if(u!==S.tuUrl){ const tu=parseTripUpdates(await B(u)); S.rt=tu.map; S.feedTime=tu.time; S.tuUrl=u; } }
   catch(e){ console.warn('Sin trip updates', e); }
   await completarViajes([...S.rt.keys(), ...geo.map(g=>g.id)]);
+  await respira();
   construirTrenes(geo);
 }
 async function cargarAvisos(){
@@ -2534,10 +2541,15 @@ $('meuBar').addEventListener('click',e=>{
 setInterval(()=>{ if(!document.hidden) pintarMeu(); }, 15000);
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
+const respira = () => new Promise(r=> document.hidden ? setTimeout(r,0) : requestAnimationFrame(()=>setTimeout(r,0)));
+// llistes i fitxa: si el contingut és el mateix, no es torna a dibuixar (evita salts i parpelleigs cada 20 s)
+['list','card'].forEach(id=>{ const el=$(id), d=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
+  Object.defineProperty(el,'innerHTML',{configurable:true, get(){ return d.get.call(this); }, set(v){ if(this._h===v && this.childNodes.length) return; this._h=v; d.set.call(this,v); }}); });
 async function ciclo(forcar){
   if(S.busy || (!forcar && document.hidden) || Date.now()<(S.pausaFins||0)) return; S.busy=true;
   try{
     await cargarRT(); fallos=0;
+    await respira();   // la feina es reparteix en imatges diferents: el mapa no s'encalla
     medirVelocidades(); pintarTodo();
     setLive('ok', S.horarios ? 'En directe' : 'En directe · calculant retards…');
   }catch(e){

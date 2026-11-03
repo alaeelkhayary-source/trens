@@ -48,7 +48,7 @@ function MapW(id, opts){
   this._el=el;
   this.ml=new ml.Map({ container:el, style:opts.style, center:[2.03,41.47], zoom:11-DZ,
     attributionControl:false, pitchWithRotate:false, maxPitch:0, dragRotate:true, touchPitch:false,
-    fadeDuration:0, antialias:false, refreshExpiredTiles:false, maxTileCacheSize:300,
+    fadeDuration:180, antialias:false, refreshExpiredTiles:false, maxTileCacheSize:300,
     pixelRatio:Math.min(window.devicePixelRatio||1,2), maxZoom:18.5, crossSourceCollisions:true,
     cooperativeGestures:false, trackResize:false });
   // canvi de mida gestionat aquí (fora del cicle de dibuix de MapLibre, que si no a vegades falla)
