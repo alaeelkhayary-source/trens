@@ -90,6 +90,13 @@ b,strong{font-weight:600}
 
 /* Trenes bien visibles */
 .tw{position:absolute;left:0;top:0;transform:translate(-50%,-50%)}
+/* fletxa de direcció: un petit triangle del color de la línia, a la vora del globus, cap on va el tren */
+.tdir{position:absolute;left:50%;top:50%;width:15px;height:12px;overflow:visible;pointer-events:none;display:none;fill:#1d2939;stroke:#fff;stroke-width:1.6px;stroke-linejoin:round;paint-order:stroke;
+  transform:translate(-50%,-50%) translate(var(--dx,0px),var(--dy,0px)) rotate(var(--a,0deg))}
+html.dark .tdir{fill:#fff;stroke:#111}
+.tw.dir .tdir{display:block}
+.tw.mini:not(.sel) .tdir{display:none}
+#map.z10 .tw:not(.sel) .tdir{width:11px;height:9px}
 .tpill{position:relative;display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:999px;background:var(--c);border:2.5px solid #fff;color:#fff;font:700 13px var(--sans);letter-spacing:.2px;white-space:nowrap;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.35),0 6px 16px rgba(0,0,0,.18);font-variant-numeric:tabular-nums}
 .tpill .td{background:#fff;color:var(--ok);border-radius:999px;padding:1px 6px;font-size:12px;margin-right:-5px}
 .tpill.w .td{color:var(--warn)} .tpill.b .td{color:#fff;background:var(--bad)}
@@ -578,7 +585,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 54</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 55</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1262,16 +1269,44 @@ function pintarTrenes(){
     const col=colorOf(t.lin);
     const html=`<div class="tw ${S.sel===t.id?'sel':''}${meuTids().has(t.id)?' meu':''}" style="--c:${col}">
       <div class="pulse"></div>
-      <div class="tpill ${c}"><span class="tl">${esc(t.lin)}</span>${d!=null&&d!==0?`<span class="td">${fmtD(d)}′</span>`:''}</div></div>`;
+      <div class="tpill ${c}"><span class="tl">${esc(t.lin)}</span>${d!=null&&d!==0?`<span class="td">${fmtD(d)}′</span>`:''}</div><svg class="tdir" viewBox="-1 -6 14 12"><path d="M0,-5 L12,0 L0,5 L3,0 Z"/></svg></div>`;
     const icon=L.divIcon({className:'tm',html,iconSize:[0,0],iconAnchor:[0,0]});
     const m=S.markers[t.id];
-    if(m){ m.setIcon(icon); if(!S.motion[t.id]) animar(m,t.pos); m.setZIndexOffset(S.sel===t.id?1000:meuTids().has(t.id)?800:(c==='b'?500:c==='w'?300:0)); }
+    if(m){ m.setIcon(icon); orientar(t.id); if(!S.motion[t.id]) animar(m,t.pos); m.setZIndexOffset(S.sel===t.id?1000:meuTids().has(t.id)?800:(c==='b'?500:c==='w'?300:0)); }
     else S.markers[t.id]=L.marker(S.motion[t.id]?puntoEn(S.motion[t.id].sh, sEn(S.motion[t.id],Date.now())):t.pos,{icon}).on('click',()=>abrirTren(t.id,true)).addTo(capaTrenes);
   });
   Object.keys(S.markers).forEach(id=>{ if(!vivos.has(id)){ capaTrenes.removeLayer(S.markers[id]); delete S.markers[id]; } });
   desamuntegar();
+  orientarTots();
 }
 
+/* Direcció de cada tren: es mira cap on avança sobre la via (80 m endavant) i es calcula l'angle a la pantalla,
+   així la fletxa és correcta encara que el mapa estigui girat. */
+S.dirAng={};
+function angleTren(id){
+  if(!map.ml || !map._loaded) return null;
+  const mo=S.motion[id]; let a=null, b=null;
+  if(mo){ const s=sEn(mo,Date.now()); const s1=Math.min(s, mo.sh.len-80); a=puntoEn(mo.sh, s1); b=puntoEn(mo.sh, s1+80); }
+  else { const t=S.trains.find(x=>x.id===id); const nx=t && (t.prox||[])[0]; const e=nx && (S.stops[parentOf(nx)]||S.stops[nx]);
+    if(t && e && isFinite(e.lat)){ a=t.pos; b=[e.lat,e.lon]; } }
+  if(!a || !b) return null;
+  const p=map.ml.project([a[1],a[0]]), q=map.ml.project([b[1],b[0]]); const dx=q.x-p.x, dy=q.y-p.y;
+  if(Math.hypot(dx,dy)<0.5) return null;
+  return Math.atan2(dy,dx);
+}
+function orientar(id, recalc){
+  const m=S.markers[id], el=m && m.getElement && m.getElement().querySelector('.tw'); if(!el) return;
+  let ang=recalc||S.dirAng[id]==null ? angleTren(id) : S.dirAng[id];
+  if(ang==null){ el.classList.remove('dir'); return; }
+  S.dirAng[id]=ang;
+  const pill=el.querySelector('.tpill'); const w=(pill.offsetWidth||40)/2+9, hh=(pill.offsetHeight||28)/2+9;
+  // punt a la vora del globus (el·lipse) en la direcció del tren
+  const c=Math.cos(ang), s=Math.sin(ang), k=1/Math.sqrt((c*c)/(w*w)+(s*s)/(hh*hh));
+  el.style.setProperty('--dx',(c*k).toFixed(1)+'px'); el.style.setProperty('--dy',(s*k).toFixed(1)+'px'); el.style.setProperty('--a',(ang*180/Math.PI).toFixed(1)+'deg');
+  el.classList.add('dir');
+}
+function orientarTots(){ for(const id in S.markers) orientar(id, true); }
+map.on('rotate rotateend pitchend', ()=>orientarTots());
 /* Trens amuntegats: si dues etiquetes es trepitgen a la pantalla, la menys important es fa petita (punt de color) */
 function desamuntegar(){
   if(!map.ml || !map._loaded) return;
@@ -1288,8 +1323,8 @@ function desamuntegar(){
     map.setObstacles(v.map(o=>{ const ll=map.ml.unproject([o.x,o.y]), petit=o.el.classList.contains('mini')||(lluny&&!o.el.classList.contains('sel'));
       return {lng:ll.lng, lat:ll.lat, t: petit?'•':(o.el.querySelector('.tpill')?.textContent||'S1').trim()+'  ', s: petit?10:14}; })); }catch(e){}
 }
-map.on('moveend zoomend', ()=>desamuntegar());
-setInterval(()=>{ if(!document.hidden && !mapaMovent) desamuntegar(); }, 1500);
+map.on('moveend zoomend', ()=>{ desamuntegar(); orientarTots(); });
+setInterval(()=>{ if(!document.hidden && !mapaMovent){ desamuntegar(); orientarTots(); } }, 1500);
 function pintarStats(){
   const v=visibles(); const ds=v.map(retrasoTren).filter(x=>x!=null);
   const tarde=ds.filter(x=>x>=3);
