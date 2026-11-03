@@ -586,7 +586,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 58</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 59</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -891,10 +891,14 @@ function prepararMovimiento(t){
       const marge = 30000;
       const surt = sale > ahora ? sale : (ahora - sale < marge ? sale + marge : ahora);
       keys.push({t:Math.max(ahora+1, surt), s:s0, nom:nomE, tipo:"sale"}); sAnt=s0; return; }
-    // si la hora estimada ya ha pasado, se le da el tiempo justo para llegar (≈ 45 km/h)
-    const minimo = ultimo.t + Math.max(1000, (s-ultimo.s)/12.5*1000);
+    // si la hora estimada ya ha passat, se li dona el temps just per arribar (com a molt ≈ 70 km/h de mitjana)
+    const minimo = ultimo.t + Math.max(1000, (s-ultimo.s)/19.5*1000);
     if(llega < minimo) llega = minimo;
     if(sale < llega) sale = llega;
+    // Parada a l'andana: l'horari d'FGC sovint dona la mateixa hora d'arribada i de sortida, però el tren sempre s'atura
+    // uns 25 s. S'arriba una mica abans (si hi ha temps) i, si no, se surt una mica més tard.
+    const final = (t.sigIdx+j) >= t.par.length-1, PARADA=25000;
+    if(!final && sale-llega < PARADA){ llega=Math.max(minimo, sale-PARADA); if(sale-llega < PARADA) sale=llega+PARADA; }
     keys.push({t:llega, s, nom:nomE, tipo:'llega'}); if(sale>llega) keys.push({t:sale, s, nom:nomE, tipo:'sale'});
     sAnt=s;
   });
