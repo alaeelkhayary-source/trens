@@ -243,7 +243,7 @@ body.can-install .instbtn{display:flex}
 .tick .tt b{font-weight:800}
 .tick:hover .tt{animation-play-state:paused}
 .tick .tx{flex:none;width:34px;height:100%;border:none;background:none;color:#fff;font-size:18px;opacity:.85;cursor:pointer}
-@keyframes tickmou{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes tickmou{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
 @media (prefers-reduced-motion:reduce){.tick .tt{animation:none}}
 body.hastick .locbtn,body.hastick .nordbtn,body.hastick .zoom,body.hastick .card,body.hastick .maplibregl-ctrl-bottom-left{margin-bottom:44px}
 .tickpop{position:fixed;inset:0;z-index:4000;background:rgba(10,12,16,.45);display:flex;align-items:flex-end;justify-content:center}
@@ -395,7 +395,7 @@ html.dark .stops li.meu{background:#3a2f12;color:#ffd666}
   .chip{flex:none;padding:5px 10px;font-size:12px}
   .zoom{display:none}
   .tick{position:fixed;left:8px;right:8px;bottom:calc(var(--tbh) + var(--tbb) + 8px);height:34px;z-index:640;font-size:13px}
-  body.sheet .tick{display:none}
+  body.sheet .tick{visibility:hidden;pointer-events:none}   /* amagada sense aturar-la: en tornar no salta */
   .locbtn{right:12px;bottom:calc(var(--tbh) + var(--tbb) + 34px);width:46px;height:46px;border-radius:50%}
   .maplibregl-ctrl-bottom-left{bottom:calc(var(--tbh) + var(--tbb) + 6px)}
   .nordbtn{right:12px;bottom:calc(var(--tbh) + var(--tbb) + 90px);width:46px;height:46px;border-radius:50%}
@@ -586,7 +586,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 56</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 57</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -1849,17 +1849,20 @@ function avisosGreus(){
     a.ents.forEach(e=>{ if(e.route) o.lins.add(e.route); }); out.set(k,o); });
   // retards forts calculats per nosaltres: una línia amb 2 o més trens a 15 min o més
   const per={}; (S.trains||[]).forEach(t=>{ const d=retrasoTren(t); if(d!=null && d>=15){ (per[t.lin]=per[t.lin]||[]).push(d); } });
-  Object.entries(per).forEach(([l,ds])=>{ if(ds.length>=2) out.set('ret|'+l,{txt:tr(`Retards importants a la línia ${l}: ${ds.length} trens van amb ${Math.min(...ds)} min de retard o més`), lins:new Set([l]), greu:false}); });
+  Object.entries(per).forEach(([l,ds])=>{ if(ds.length>=2) out.set('ret|'+l,{curt:tr(`Retards importants a la línia ${l}`), txt:tr(`Retards importants a la línia ${l}: ${ds.length} trens van amb ${Math.min(...ds)} min de retard o més`), lins:new Set([l]), greu:false}); });
   return [...out.values()];
 }
 function pintarTick(){
   const el=$('tick'), v=avisosGreus();
-  const firma=v.map(x=>x.txt).join('|'); let amagat=''; try{ amagat=sessionStorage.getItem('tev-tick')||''; }catch(e){}
+  // la cinta només es refà si canvien els avisos (no si canvia un número): així no torna a començar cada 20 s
+  const firma=v.map(x=>x.curt||x.txt).join('|'); let amagat=''; try{ amagat=sessionStorage.getItem('tev-tick')||''; }catch(e){}
   if(!v.length || amagat===firma){ el.hidden=true; document.body.classList.remove('hastick'); return; }
   if(el.dataset.f!==firma){ el.dataset.f=firma;
-    const html=v.map(x=>`<span>${x.lins.size?`<b>${esc([...x.lins].slice(0,4).join(' · '))}</b> — `:''}${esc(x.txt)}</span>`).join('');
+    const html=v.map(x=>`<span>${x.lins.size?`<b>${esc([...x.lins].slice(0,4).join(' · '))}</b> — `:''}${esc(x.curt||x.txt)}</span>`).join('');
     $('tickT').innerHTML=html+html;   // dues còpies: la cinta no fa salt en tornar a començar
-    const llarg=$('tickT').scrollWidth/2; $('tickT').style.setProperty('--dur', Math.max(12, llarg/55)+'s');
+    const llarg=$('tickT').scrollWidth/2; $('tickT').style.setProperty('--dur', Math.max(10, llarg/60).toFixed(2)+'s'); }   // 60 px per segon: 1 px per imatge, sense tremolar
+  const llista=v.map(x=>x.txt).join('|');
+  if($('tickList').dataset.f!==llista){ $('tickList').dataset.f=llista;
     $('tickList').innerHTML=v.map(x=>`<li>${esc(x.txt)}${x.lins.size?`<small>${esc([...x.lins].join(' · '))}</small>`:''}${x.desc&&x.desc!==x.txt?`<small>${esc(x.desc)}</small>`:''}</li>`).join(''); }
   el.classList.toggle('w', !v.some(x=>x.greu));
   el.hidden=false; document.body.classList.add('hastick');
