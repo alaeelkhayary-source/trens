@@ -586,7 +586,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 61</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 62</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -852,6 +852,24 @@ function sParades(t, sh){
 /* Retard calculat amb la POSICIÓ real del tren (no amb les previsions): a quina hora de l'horari correspon el punt
    on FGC diu que era el tren, comparat amb l'hora en què hi era. Serveix quan FGC no envia previsions per a aquest tren
    (o les té desfasades), que passa sovint. */
+/* Les posicions d'FGC arriben amb uns minuts de retard (la dada és de fa ~5 min, no d'ara).
+   Es mesura amb els trens que FGC diu que van a l'hora i que estan aturats a una estació intermèdia:
+   segons l'horari hi eren entre l'arribada i la sortida, així que la diferència amb ara és el retard de la dada. */
+S.posLag = (()=>{ try{ const v=+localStorage.getItem('tev-lag'); return v>=0 && v<900000 ? v : 0; }catch(e){ return 0; } })();
+function calibrarRetardDades(geo){
+  const mostres=[];
+  S.trains.forEach(t=>{ if(!t.parado || !t.par || !t.enHoraFGC) return; const sch=S.sched.get(t.id); if(!sch) return;
+    const i=t.par.findIndex(p=>parentOf(p.stop)===parentOf(t.parado)); if(i<=0 || i>=t.par.length-1) return;
+    const mid=gtfsMidnight(todayStr()); mostres.push(S.posT-(mid+(sch[i].arr+sch[i].dep)*500)); });
+  if(mostres.length<3) return;
+  mostres.sort((a,b)=>a-b); const med=mostres[mostres.length>>1];
+  if(med<-60000 || med>12*60000) return;   // valor estrany: no es toca
+  const nou=Math.max(0, med);
+  S.posLag = S.posLagOk ? Math.round(S.posLag*0.6+nou*0.4) : nou; S.posLagOk=true;
+  try{ localStorage.setItem('tev-lag', String(S.posLag)); }catch(e){}
+}
+// moment real (aproximat) en què el tren era al punt que diu FGC
+const tPosicio = () => S.posT ? S.posT - (S.posLag||0) : null;
 function retardPerPosicio(t, sh, real, tPos){
   const ss=sParades(t, sh), par=t.par; if(!ss) return null;
   const sch=S.sched.get(t.id); if(!sch) return null;
@@ -887,13 +905,13 @@ function prepararMovimiento(t){
   const realNova = !prev || prev.realS==null || Math.abs(prev.realS-real.s)>5;
   // Posició d'FGC: és de quan FGC la va publicar (S.posT), no d'ara. Des d'aquell moment el tren s'ha mogut
   // segons les hores previstes d'FGC: es calcula on ha de ser ara mateix a partir d'aquell punt.
-  const tPos = S.posT && S.posT<ahora && ahora-S.posT<180000 ? S.posT : ahora;
+  const tp=tPosicio(), tPos = tp && tp<ahora && ahora-tp<15*60000 ? tp : ahora;
   if(realNova || !S.retPos.has(t.id)){ const rp=retardPerPosicio(t, sh, real, tPos);
     if(rp!=null && rp>-6*60000 && rp<90*60000){ S.retPos.set(t.id, {d:rp, t:ahora});
       if(!temRT(t.id)){ t.par=paradasViaje(t.id); t.delay=Math.round(rp/60000); } } }
   let base = sEn({keys:claus(t, sh, real, tPos, real.s)}, ahora);
   // si fa estona que FGC no actualitza, l'horari en temps real pot saber més (fins a 1,5 km endavant)
-  if(ahora-tPos>75000){ const sh_=sSegonsHorari(t, sh, ahora); if(sh_!=null && sh_>base && sh_-base<1500) base=sh_; }
+  if(ahora-(S.posT||ahora)>150000){ const sh_=sSegonsHorari(t, sh, ahora); if(sh_!=null && sh_>base && sh_-base<1500) base=sh_; }
   let keys;
   if(prev && !realNova){
     // FGC no ha canviat la posició: es continua el moviment que ja es veu
@@ -1024,7 +1042,7 @@ function registrarSegundo(){
   // (el rastre de punts del tren seleccionat s'ha tret: feia salts quan FGC corregia la posició)
   // reloj y tarjeta
   $('clock').textContent=new Date().toLocaleTimeString('ca-ES',{timeZone:'Europe/Madrid'});
-  if(S.posT||S.lastPosChange) $("ago").textContent=` · posicions FGC fa ${Math.round((ahora-(S.posT||S.lastPosChange))/1000)} s`;
+  if(S.posT||S.lastPosChange){ const s=Math.round((ahora-(tPosicio()||S.lastPosChange))/1000); $("ago").textContent=` · posicions FGC fa ${s>=120?Math.round(s/60)+' min':s+' s'}`; }
   if(S.sel) refrescarTarjeta();
 }
 setInterval(registrarSegundo, 1000);
@@ -1205,11 +1223,12 @@ async function cargarRT(){
     if(firma!==S.posFirma){
       const t=S.posConsulta ? Math.round((S.posConsulta+ara)/2) : ara-15000;
       if(S.posT && S.posFirma){ const d=t-S.posT; if(d>15000 && d<150000){ (S.posPeriodes=S.posPeriodes||[]).push(d); if(S.posPeriodes.length>6) S.posPeriodes.shift(); } }
-      S.posT=t; S.posFirma=firma; }
+      S.posT=t; S.posFirma=firma; S.posNova=true; }
     S.posConsulta=ara; }
   await completarViajes([...S.rt.keys(), ...geo.map(g=>g.id)]);
   await respira();
   construirTrenes(geo);
+  if(S.posNova){ S.posNova=false; calibrarRetardDades(geo); }
 }
 async function cargarAvisos(){
   try{
