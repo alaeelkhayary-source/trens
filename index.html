@@ -586,7 +586,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 60</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 61</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -638,7 +638,7 @@ const S = {
   net:'all', mode:'station', showAll:false,
   sel:null, follow:false,
   markers:{}, station:null, feedTime:null, hoy:{}, horarios:false,
-  shapes:new Map(), motion:{}, posTime:null,
+  shapes:new Map(), motion:{}, posTime:null, retPos:new Map(),
   log:{}, track:{}, prevState:{}, lastPosChange:null, busy:false, selEst:null, selRuta:null, svcHoy:new Set(), idxSal:null,
   favs:(()=>{ try{ const ls=localStorage.getItem('tev-favs'); if(ls) return JSON.parse(ls); const ck=document.cookie.match(/(?:^|; )tevfavs=([^;]*)/); return ck?JSON.parse(decodeURIComponent(ck[1])):[]; }catch(e){ return []; } })()
 };
@@ -836,7 +836,7 @@ function sEn(mo, t){
 }
 // Posició (metres sobre el traçat) on hauria de ser el tren ara segons les hores previstes en temps real
 const cacheParS=new Map();
-function sSegonsHorari(t, sh, ahora){
+function sParades(t, sh){
   const par=t.par; if(!par||par.length<2) return null;
   let ss=cacheParS.get(t.id);
   if(!ss||ss.length!==par.length){
@@ -847,6 +847,26 @@ function sSegonsHorari(t, sh, ahora){
       idx=Math.max(idx,pr.i); ant=Math.max(ant,pr.s); ss.push(ant); });
     cacheParS.set(t.id,ss);
   }
+  return ss;
+}
+/* Retard calculat amb la POSICIÓ real del tren (no amb les previsions): a quina hora de l'horari correspon el punt
+   on FGC diu que era el tren, comparat amb l'hora en què hi era. Serveix quan FGC no envia previsions per a aquest tren
+   (o les té desfasades), que passa sovint. */
+function retardPerPosicio(t, sh, real, tPos){
+  const ss=sParades(t, sh), par=t.par; if(!ss) return null;
+  const sch=S.sched.get(t.id); if(!sch) return null;
+  const mid=gtfsMidnight(S.rt.get(t.id)?.date || todayStr());
+  const prog=i=>mid+sch[i].arr*1000, progD=i=>mid+sch[i].dep*1000;
+  if(t.parado){ const i=par.findIndex(p=>parentOf(p.stop)===parentOf(t.parado)); if(i<0||ss[i]==null) return null;
+    // aturat a l'estació: si encara no és l'hora de sortir, va a l'hora; si ja hauria d'haver sortit, porta aquest retard
+    return Math.max(0, tPos-progD(i)); }
+  for(let i=0;i<par.length-1;i++){ if(ss[i]==null) continue; let j=i+1; while(j<par.length && ss[j]==null) j++; if(j>=par.length) break;
+    if(real.s>=ss[i]-20 && real.s<=ss[j]+20){ const k=Math.max(0,Math.min(1,(real.s-ss[i])/((ss[j]-ss[i])||1)));
+      const tH=progD(i)+(prog(j)-progD(i))*k; return tPos-tH; } }
+  return null;
+}
+function sSegonsHorari(t, sh, ahora){
+  const par=t.par; const ss=sParades(t, sh); if(!ss) return null;
   let a=null;
   for(let i=0;i<par.length;i++){
     if(ss[i]==null) continue;
@@ -868,6 +888,9 @@ function prepararMovimiento(t){
   // Posició d'FGC: és de quan FGC la va publicar (S.posT), no d'ara. Des d'aquell moment el tren s'ha mogut
   // segons les hores previstes d'FGC: es calcula on ha de ser ara mateix a partir d'aquell punt.
   const tPos = S.posT && S.posT<ahora && ahora-S.posT<180000 ? S.posT : ahora;
+  if(realNova || !S.retPos.has(t.id)){ const rp=retardPerPosicio(t, sh, real, tPos);
+    if(rp!=null && rp>-6*60000 && rp<90*60000){ S.retPos.set(t.id, {d:rp, t:ahora});
+      if(!temRT(t.id)){ t.par=paradasViaje(t.id); t.delay=Math.round(rp/60000); } } }
   let base = sEn({keys:claus(t, sh, real, tPos, real.s)}, ahora);
   // si fa estona que FGC no actualitza, l'horari en temps real pot saber més (fins a 1,5 km endavant)
   if(ahora-tPos>75000){ const sh_=sSegonsHorari(t, sh, ahora); if(sh_!=null && sh_>base && sh_-base<1500) base=sh_; }
@@ -1210,17 +1233,22 @@ async function completarViajes(ids){
 }
 
 // Une horario + previsión de un viaje: lista de paradas con hora programada y estimada
+// les previsions d'FGC (trip updates) de vegades es queden encallades hores: si fa més de 15 min que no s'actualitzen, no es fan servir
+const rtFresc = () => S.feedTime && Date.now()-S.feedTime < 15*60000;
+const temRT = id => { if(!rtFresc()) return false; const r=S.rt.get(id); return !!(r && r.stus && r.stus.length); };
 function paradasViaje(tripId, dataForcada){
-  const sch=S.sched.get(tripId); let rt=S.rt.get(tripId);
+  const sch=S.sched.get(tripId); let rt=rtFresc()?S.rt.get(tripId):null;
   if(!sch) return null;
   if(dataForcada && rt && rt.date!==dataForcada) rt=null;   // un altre dia: només l'horari
   const date = dataForcada || rt?.date || todayStr(); const mid=gtfsMidnight(date);
   const byStop={}; (rt?.stus||[]).forEach(u=>{ if(u.stop){ byStop[u.stop]=u; byStop[parentOf(u.stop)]=byStop[parentOf(u.stop)]||u; } });
   let lastDelay=null;
+  const rp = !rt && !dataForcada ? S.retPos.get(tripId) : null, rpOk = rp && Date.now()-rp.t < 6*60000;
   return sch.map(s=>{
     const prog=mid+s.arr*1000, progD=mid+s.dep*1000;
     const u=byStop[s.stop]||byStop[parentOf(s.stop)];
     let est=null, estD=null;
+    if(rpOk){ return {stop:s.stop, prog, progD, est:prog+rp.d, estD:progD+rp.d, rt:true, pos:true}; }
     if(u){
       est = u.arr?.t ?? (u.arr?.d!=null ? prog+u.arr.d*1000 : null);
       estD = u.dep?.t ?? (u.dep?.d!=null ? progD+u.dep.d*1000 : est);
@@ -2241,7 +2269,7 @@ async function comprovarAvisos(){
     if(a.data!==avui) continue;
     let prog=a.prog, est=null;
     const rt=S.rt.get(a.tid);
-    if(rt){ const par=paradasViaje(a.tid); const p=par?.find(x=>parentOf(x.stop)===a.code); if(p){ prog=p.progD??prog; est=p.estD??null; } }
+    { const par=paradasViaje(a.tid); const p=par?.find(x=>parentOf(x.stop)===a.code); if(p && (p.rt)){ prog=p.progD??prog; est=p.estD??null; } }
     const t=est??prog; if(!t) continue;
     const ret=est!=null?Math.round((est-prog)/60000):0;
     const nomE=nom(a.code), ttl=`🚆 ${a.lin} cap a ${a.dest}`;
