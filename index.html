@@ -586,7 +586,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 4/11 · 64</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 4/11 · 65</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -903,6 +903,8 @@ function prepararMovimiento(t){
   const ahora=Date.now();
   const real=proyectar(sh, t.pos[0], t.pos[1]);
   if(real.d>400){ delete S.motion[t.id]; return; }       // el tren no està sobre aquest traçat
+  // tren aparcat a l'estació d'origen esperant un servei que surt d'aquí a més de 20 min: es queda quiet on diu FGC
+  if(t.sigIdx===0 && t.par[0] && (t.par[0].estD??t.par[0].progD) > ahora+20*60000){ delete S.motion[t.id]; return; }
   const prev=S.motion[t.id];
   const realNova = !prev || prev.realS==null || Math.abs(prev.realS-real.s)>5;
   // Posició d'FGC: és de quan FGC la va publicar (S.posT), no d'ara. Des d'aquell moment el tren s'ha mogut
@@ -2618,7 +2620,7 @@ $('meuBar').addEventListener('click',e=>{
 setInterval(()=>{ if(!document.hidden) pintarMeu(); }, 15000);
 function setLive(st,txt){ $('dot').className='dot'+(st==='err'?' err':st==='load'?' load':''); $('liveTxt').textContent=txt; }
 let fallos=0;
-const respira = () => new Promise(r=> document.hidden ? setTimeout(r,0) : requestAnimationFrame(()=>setTimeout(r,0)));
+const respira = () => new Promise(r=>{ let fet=false; const f=()=>{ if(!fet){ fet=true; r(); } }; setTimeout(f,250); if(!document.hidden) requestAnimationFrame(()=>setTimeout(f,0)); else setTimeout(f,0); });   // mai es queda esperant
 // llistes i fitxa: si el contingut és el mateix, no es torna a dibuixar (evita salts i parpelleigs cada 20 s)
 ['list','card'].forEach(id=>{ const el=$(id), d=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
   Object.defineProperty(el,'innerHTML',{configurable:true, get(){ return d.get.call(this); }, set(v){ if(this._h===v && this.childNodes.length) return; this._h=v; d.set.call(this,v); }}); });
