@@ -586,7 +586,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="incid" id="incid"><p>Carregant avisos…</p></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 3/11 · 63</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 4/11 · 64</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a>
     </div>
   </aside>
@@ -654,8 +654,10 @@ const tSec = s => { const [h,m,x]=s.split(':').map(Number); return h*3600+m*60+(
 const colorOf = l => COL[l] || COL[String(l).replace(/^([A-Z]+\d)\d+$/,'$1')] || (/^M\d$/.test(l) && COL.MM && COL.MM!=='#000000' && COL.MM) || (/^M\d$/.test(l) && '#5c6f82') || '#8696a5';   // R61 → color de la R6, M1/M2 → cremallera
 const cls = d => d==null ? 'ok' : d>=10 ? 'b' : d>=3 ? 'w' : 'ok';
 const fmtD = d => d==null ? '' : d>0 ? '+'+d : d<0 ? String(d) : '';
-async function J(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status+' '+url); return r.json(); }
-async function T(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return r.text(); }
+// totes les consultes tenen un límit de 15 s: si la xarxa es penja (canvi de wifi a dades…), no es queda tot aturat
+const ambLimit = (url, ms=15000) => { const c=new AbortController(), t=setTimeout(()=>c.abort(), ms); return fetch(url,{cache:'no-store', signal:c.signal}).finally(()=>clearTimeout(t)); };
+async function J(url){ const r=await ambLimit(url); if(!r.ok) throw new Error(r.status+' '+url); return r.json(); }
+async function T(url){ const r=await ambLimit(url, 60000); if(!r.ok) throw new Error(r.status); return r.text(); }
 /* Dades que canvien poc (horaris, vies, estacions): es guarden 12 h al dispositiu (IndexedDB).
    Així recarregar la pàgina no torna a demanar-les a FGC, i si FGC bloqueja temporalment (error 429) es fa servir la còpia. */
 const DESAT_TTL = 12*3600e3;
@@ -668,7 +670,7 @@ async function desat(clau, obtenir){
   try{ const v=await obtenir(); escriureDesat(clau, v); return v; }
   catch(e){ if(c) return c.v; throw e; }
 }
-async function B(url){ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(r.status); return netejarPB(new Uint8Array(await r.arrayBuffer())); }
+async function B(url){ const r=await ambLimit(url, 20000); if(!r.ok) throw new Error(r.status); return netejarPB(new Uint8Array(await r.arrayBuffer())); }
 // A vegades el servidor d'FGC enganxa avisos de PHP ("<br /><b>Warning</b>…") davant de les dades binàries: se salten.
 function netejarPB(b){
   if(!b.length || b[0]!==0x3c) return b;
@@ -992,6 +994,7 @@ function moverTrenes(forcar){
 // moviment suau (~30 fps), aturat mentre arrossegues/fas zoom o si la pestanya no es veu
 (function bucle(t){
   requestAnimationFrame(bucle);
+  if(mapaMovent && !map.ml.isMoving() && !map.ml.isZooming() && !map.ml.isRotating()) mapaMovent=false;   // si s'ha quedat marcat sense moure's, es desbloqueja
   if(mapaMovent || document.hidden || t-ultimMov<14) return;   // cada imatge (60 per segon): moviment suau
   ultimMov=t; moverTrenes();
 })(0);
@@ -2620,9 +2623,10 @@ const respira = () => new Promise(r=> document.hidden ? setTimeout(r,0) : reques
 ['list','card'].forEach(id=>{ const el=$(id), d=Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
   Object.defineProperty(el,'innerHTML',{configurable:true, get(){ return d.get.call(this); }, set(v){ if(this._h===v && this.childNodes.length) return; this._h=v; d.set.call(this,v); }}); });
 async function ciclo(forcar){
-  if(S.busy || (!forcar && document.hidden) || Date.now()<(S.pausaFins||0)) return; S.busy=true;
+  if(S.busy && Date.now()-(S.busyDes||0)>45000) S.busy=false;   // una consulta penjada no ho atura tot
+  if(S.busy || (!forcar && document.hidden) || Date.now()<(S.pausaFins||0)) return; S.busy=true; S.busyDes=Date.now();
   try{
-    await cargarRT(); fallos=0;
+    await cargarRT(); fallos=0; S.ultimCicle=Date.now();
     await respira();   // la feina es reparteix en imatges diferents: el mapa no s'encalla
     medirVelocidades(); pintarTodo();
     setLive('ok', S.horarios ? 'En directe' : 'En directe · calculant retards…');
@@ -2661,8 +2665,10 @@ async function ciclo(forcar){
     let espera=REFRESH;
     if(S.posT){ const toca=S.posT+per; espera = ara < toca-7000 ? Math.min(25000, toca-6000-ara) : (ara < toca+30000 ? 6000 : 15000); }
     espera=Math.max(5000, espera, (S.pausaFins||0)-ara);
-    setTimeout(async()=>{ await ciclo(); seguent(); }, espera);
+    clearTimeout(S.tSeg); S.tSeg=setTimeout(async()=>{ try{ await ciclo(); }catch(e){} finally{ seguent(); } }, espera);
   })();
+  // vigilant: si fa més d'un minut que no arriben dades (i la web es veu), es torna a demanar
+  setInterval(()=>{ if(!document.hidden && Date.now()-(S.ultimCicle||0)>60000) ciclo(); }, 20000);
   setInterval(cargarAvisos, 600000);
   document.addEventListener('visibilitychange',()=>{ if(!document.hidden) ciclo(); });
   setInterval(()=>{ if(S.mode==='station') pintarEstacion(); if(S.mode==='viatge' && !S.quan) pintarViatge(); }, 30000);
