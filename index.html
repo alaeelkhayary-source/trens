@@ -591,7 +591,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="anunci" id="anunci" hidden><small>Publicitat</small><div id="anunciCos"></div></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 5/11 · 67</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 5/11 · 68</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a> · <a href="privacitat.html">Privacitat i galetes</a>
     </div>
   </aside>
@@ -2274,6 +2274,8 @@ function carregarAnuncis(){
   try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
 window.addEventListener('load',()=>setTimeout(()=>{ ('requestIdleCallback' in window ? requestIdleCallback : f=>f())(carregarAnuncis); }, 4000));
+// vista prèvia de l'espai (només amb ?anunci a l'adreça): per veure on sortirà l'anunci abans que AdSense l'aprovi
+if(/[?&]anunci\b/.test(location.search)){ $('anunciCos').innerHTML='<div style="height:250px;display:grid;place-items:center;border:2px dashed var(--line);border-radius:12px;color:var(--dim);font:600 14px var(--sans)">Aquí sortirà l\'anunci</div>'; $('anunci').hidden=false; }
 /* ===== Avisos amb la web tancada (Web Push a través del servidor d'avisos) ===== */
 const pushPossible = () => !!PUSH_API && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const b64aBytes = s => { s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4) s+='='; return Uint8Array.from(atob(s), c=>c.charCodeAt(0)); };
