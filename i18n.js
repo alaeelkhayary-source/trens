@@ -272,6 +272,7 @@ const D = [
 ["Estadístiques: aquest dispositiu ja NO compta.","Estadísticas: este dispositivo ya NO cuenta.","Stats: this device is NOT counted any more."],
 ["Missatge de prova: aquesta és la cinta d'avisos importants de Trens en viu","Mensaje de prueba: esta es la cinta de avisos importantes de Trens en viu","Test message: this is the Trens en viu important alerts ticker"],
 ["PROVA","PRUEBA","TEST"],
+["Contacte:","Contacto:","Contact:"],
 ["Privacitat i galetes","Privacidad y cookies","Privacy and cookies"],
 ["Publicitat","Publicidad","Advertisement"],
 ["versió","versión","version"],
