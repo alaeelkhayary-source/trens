@@ -366,7 +366,7 @@ html.dark .stops li.meu{background:#3a2f12;color:#ffd666}
 .incid li small{color:var(--muted);display:block;margin-top:3px;font-size:12px}
 .incid p{color:var(--muted);font-size:14px}
 .anunci{margin:4px 16px 12px;min-height:110px;border-radius:12px;overflow:hidden;text-align:center}
-.anunci[hidden]{display:none}
+.anunci[hidden]{display:block;height:0;min-height:0;margin:0;overflow:hidden;visibility:hidden}   /* amagat però amb amplada, perquè Google pugui calcular la mida de l'anunci */
 .anunci small{display:block;font:600 10px var(--sans);letter-spacing:.6px;text-transform:uppercase;color:var(--dim);margin:0 0 4px}
 .foot{padding:14px 20px;border-top:1px solid var(--line);font-size:11px;color:var(--dim);line-height:1.5}
 .foot a{color:var(--muted)}
@@ -591,7 +591,7 @@ html.dark img.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(.9) co
     <div class="anunci" id="anunci" hidden><small>Publicitat</small><div id="anunciCos"></div></div>
     <div class="foot">
       <a class="donbtn" id="donFoot" href="#" target="_blank" rel="noopener" style="display:none">☕ Convida'm a un cafè</a>
-      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 5/11 · 68</span></div>
+      <div class="creator">Creador: <b>Alae</b> · <span id="versio" style="color:var(--dim);user-select:none;-webkit-user-select:none">versió 5/11 · 69</span></div>
       Web no oficial, feta amb les dades obertes d'FGC. No està vinculada a Ferrocarrils de la Generalitat de Catalunya. Dades: <a href="https://dadesobertes.fgc.cat" target="_blank" rel="noopener">dadesobertes.fgc.cat</a> · <a href="privacitat.html">Privacitat i galetes</a>
     </div>
   </aside>
@@ -619,7 +619,7 @@ const BASE = 'https://dadesobertes.fgc.cat/api/explore/v2.1/catalog/datasets';
 const PUSH_API = '';
 // Google AdSense: posar aquí l'identificador d'editor (ca-pub-…) i el del bloc d'anunci quan AdSense aprovi la web.
 // Buit = no es carrega res de Google (la web va igual de ràpida que sempre).
-const ADSENSE = { client:'ca-pub-8442713059236852', slot:'' };
+const ADSENSE = { client:'ca-pub-8442713059236852', slot:'6797469830' };
 const REFRESH = 20000;  // es pregunta a FGC cada 20 s (FGC actualitza les posicions ~1 cop per minut); els trens es mouen sols entre consultes
 const XARXA = {
   BV:['L6','L7','L12','S1','S2','S5','S6','S7'],
@@ -2264,13 +2264,16 @@ document.addEventListener('click',e=>{
    Un sol bloc al panell, mai a sobre del mapa. Es carrega quan la web ja funciona (uns segons després d'obrir-la),
    perquè no alenteixi l'arrencada. El missatge de consentiment de galetes el mostra Google (plataforma certificada). */
 function carregarAnuncis(){
-  if(!ADSENSE.client || carregarAnuncis.fet) return; carregarAnuncis.fet=true;
+  if(!ADSENSE.client || carregarAnuncis.fet || /[?&]anunci\b/.test(location.search)) return; carregarAnuncis.fet=true;
   const s=document.createElement('script'); s.async=true; s.crossOrigin='anonymous';
   s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+encodeURIComponent(ADSENSE.client);
   document.head.appendChild(s);
   if(!ADSENSE.slot) return;
   $('anunciCos').innerHTML=`<ins class="adsbygoogle" style="display:block" data-ad-client="${esc(ADSENSE.client)}" data-ad-slot="${esc(ADSENSE.slot)}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;
-  $('anunci').hidden=false;
+  // l'espai només es mostra quan Google hi posa un anunci de veritat (si no n'hi ha, no queda cap forat buit)
+  const ins=$('anunciCos').querySelector('ins');
+  new MutationObserver(()=>{ $('anunci').hidden = ins.getAttribute('data-ad-status')!=='filled'; }).observe(ins,{attributes:true, attributeFilter:['data-ad-status']});
+  $('anunci').hidden=true; $('anunci').style.cssText='';
   try{ (window.adsbygoogle=window.adsbygoogle||[]).push({}); }catch(e){}
 }
 window.addEventListener('load',()=>setTimeout(()=>{ ('requestIdleCallback' in window ? requestIdleCallback : f=>f())(carregarAnuncis); }, 4000));
